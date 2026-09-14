@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="丈量排程">
+<meta name="theme-color" content="#f7f3ee">
+<link rel="manifest" href="manifest.json">
+<title>丈量排程</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
+:root {
+  --bg:#f7f3ee; --surface:#ffffff; --sur2:#f0ebe3; --border:#e5ddd3;
+  --text:#1a1208; --text2:#5c4a35; --text3:#a8917a;
+  --accent:#3058a0; --acc2:#1f3f7a;
+  --red:#b83232; --green:#2e7a50; --blue:#3058a0; --amber:#8a5a10;
+  --rcard:22px; --rbtn:14px; --rchip:100px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Noto Sans TC',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:-webkit-fill-available;overflow-x:hidden;}
+.header{position:sticky;top:0;z-index:100;background:rgba(247,243,238,0.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:env(safe-area-inset-top,0) 0 0;}
+.hinner{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 10px;max-width:900px;margin:0 auto;}
+.logo-title{font-size:27px;font-weight:900;letter-spacing:-0.5px;line-height:1;}
+.logo-sub{font-size:10px;color:var(--text3);font-weight:400;letter-spacing:1px;margin-top:2px;}
+.hbtns{display:flex;gap:8px;align-items:center;}
+.add-btn{width:40px;height:40px;border-radius:var(--rbtn);background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:300;line-height:1;box-shadow:0 2px 10px rgba(48,88,160,0.25);}
+.add-btn:active{transform:scale(0.88);opacity:0.85;}
+.view-toggle{display:flex;background:var(--sur2);border-radius:10px;padding:3px;gap:2px;}
+.vtbtn{padding:5px 10px;border-radius:8px;border:none;background:transparent;cursor:pointer;font-size:14px;}
+.vtbtn.active{background:var(--surface);box-shadow:0 1px 4px rgba(0,0,0,0.1);}
+.gcal-btn{display:flex;align-items:center;gap:5px;background:var(--sur2);border:1px solid var(--border);border-radius:var(--rchip);padding:5px 12px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;}
+.gcal-btn.on{background:rgba(46,122,80,0.12);color:var(--green);border-color:transparent;}
+.stats-row{display:flex;gap:8px;padding:4px 20px 8px;overflow-x:auto;scrollbar-width:none;max-width:900px;margin:0 auto;}
+.stats-row::-webkit-scrollbar{display:none;}
+.spill{flex-shrink:0;display:flex;align-items:baseline;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rchip);padding:5px 13px;white-space:nowrap;}
+.spill .n{font-size:15px;font-weight:700;}
+.spill .l{font-size:11px;color:var(--text3);}
+.hdivider{height:1px;background:var(--border);margin:0 20px;max-width:860px;margin-left:auto;margin-right:auto;}
+.list{padding:14px 16px 110px;max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:12px;}
+.section-head{display:flex;align-items:center;gap:10px;padding:4px 0 2px;}
+.section-head-title{font-size:13px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;}
+.section-divider{flex:1;height:1px;background:var(--border);}
+.card{background:var(--surface);border-radius:var(--rcard);overflow:hidden;box-shadow:0 1px 3px rgba(60,30,10,0.07),0 4px 14px rgba(60,30,10,0.05);position:relative;}
+.card.done-card{opacity:0.7;}
+.cstripe{height:3px;background:var(--border);}
+.card.scheduled .cstripe{background:var(--blue);}
+.card.done-card .cstripe{background:var(--green);}
+.ctop{display:flex;align-items:flex-start;justify-content:space-between;padding:16px 16px 8px;gap:10px;}
+.cleft{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;}
+.cname{font-size:17px;font-weight:700;line-height:1.25;}
+.card.done-card .cname{text-decoration:line-through;color:var(--text3);}
+.cchips{display:flex;flex-wrap:wrap;gap:5px;}
+.chip{display:inline-flex;align-items:center;font-size:11px;font-weight:600;padding:3px 9px;border-radius:var(--rchip);letter-spacing:0.2px;}
+.ch-待安排{background:rgba(138,90,16,0.12);color:var(--amber);}
+.ch-已排定{background:rgba(48,88,160,0.10);color:var(--blue);}
+.ch-已完成{background:rgba(46,122,80,0.12);color:var(--green);}
+.cacts{display:flex;gap:6px;flex-shrink:0;padding-top:2px;}
+.actbtn{width:34px;height:34px;border-radius:12px;background:var(--sur2);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;}
+.actbtn:active{background:var(--border);}
+.done-btn{background:rgba(46,122,80,0.12);font-size:16px;}
+.cbody{padding:0 16px 14px;display:flex;flex-direction:column;gap:8px;}
+.irow{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;}
+.icell{display:flex;flex-direction:column;gap:2px;}
+.ilbl{font-size:10px;font-weight:500;color:var(--text3);letter-spacing:0.6px;text-transform:uppercase;}
+.ival{font-size:13px;font-weight:500;color:var(--text2);}
+.addr-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.addr-row .ival{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.noteblock{background:rgba(48,88,160,0.06);border-radius:10px;padding:9px 11px;font-size:12px;font-weight:300;color:var(--text2);line-height:1.65;}
+.cfoot{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-top:1px solid var(--border);}
+.fuser,.ftime{font-size:11px;color:var(--text3);}
+/* CALENDAR */
+.cal-wrap{padding:14px 16px 110px;max-width:900px;margin:0 auto;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.cal-title{font-size:20px;font-weight:800;}
+.cal-nav{width:36px;height:36px;border-radius:12px;background:var(--surface);border:1px solid var(--border);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--text2);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:20px;}
+.cal-dow{text-align:center;font-size:11px;font-weight:600;color:var(--text3);padding:4px 0 8px;}
+.cal-day{aspect-ratio:1;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:5px;cursor:pointer;position:relative;}
+.cal-day:hover{background:var(--sur2);}
+.cal-day.today{background:var(--accent);}
+.cal-day.today .cal-dn{color:#fff;font-weight:700;}
+.cal-day.other-month .cal-dn{color:var(--text3);}
+.cal-dn{font-size:13px;font-weight:500;line-height:1;}
+.cal-dots{display:flex;gap:2px;justify-content:center;margin-top:3px;}
+.cal-dot{width:5px;height:5px;border-radius:50%;background:var(--blue);}
+.cal-events{display:flex;flex-direction:column;gap:8px;}
+.cal-ev-head{font-size:12px;font-weight:700;color:var(--text3);letter-spacing:0.6px;text-transform:uppercase;padding:8px 0 4px;}
+.cal-ev-card{background:var(--surface);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(60,30,10,0.06);}
+.cal-ev-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;background:var(--blue);}
+.cal-ev-info{flex:1;min-width:0;}
+.cal-ev-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cal-ev-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+.cal-ev-date{font-size:12px;font-weight:600;color:var(--text2);flex-shrink:0;}
+/* MODAL */
+.overlay{position:fixed;inset:0;z-index:200;background:rgba(26,18,8,0.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.22s;}
+.overlay.open{opacity:1;pointer-events:all;}
+.modal{width:100%;max-width:560px;background:var(--bg);border-radius:28px 28px 0 0;padding-bottom:env(safe-area-inset-bottom,20px);transform:translateY(100%);transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);max-height:93vh;overflow-y:auto;}
+.overlay.open .modal{transform:translateY(0);}
+.mhandle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:14px auto 0;}
+.mhead{display:flex;align-items:center;justify-content:space-between;padding:16px 22px 6px;}
+.mhead-title{font-size:20px;font-weight:800;letter-spacing:-0.3px;}
+.mclose{width:30px;height:30px;border-radius:50%;background:var(--sur2);border:none;cursor:pointer;font-size:15px;color:var(--text2);display:flex;align-items:center;justify-content:center;}
+.form{padding:10px 22px 24px;display:flex;flex-direction:column;gap:16px;}
+.fgrp{display:flex;flex-direction:column;gap:6px;}
+.flbl{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.7px;text-transform:uppercase;}
+.finput,.fselect,.ftextarea{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;color:var(--text);padding:12px 14px;font-size:15px;font-family:inherit;outline:none;width:100%;-webkit-appearance:none;appearance:none;}
+.finput:focus,.fselect:focus,.ftextarea:focus{border-color:var(--accent);}
+.ftextarea{resize:none;min-height:76px;line-height:1.55;}
+.fgrow2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.savebtn{width:100%;padding:15px;border-radius:16px;background:var(--accent);border:none;color:#fff;font-size:16px;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 4px 18px rgba(48,88,160,0.28);}
+.savebtn:active{transform:scale(0.97);opacity:0.9;}
+.gcal-row{display:flex;align-items:center;justify-content:space-between;background:rgba(48,88,160,0.06);border:1px solid rgba(48,88,160,0.18);border-radius:14px;padding:12px 14px;font-size:13px;color:var(--text2);}
+.toggle{width:50px;height:28px;background:var(--border);border-radius:14px;position:relative;cursor:pointer;border:none;flex-shrink:0;}
+.toggle.on{background:var(--accent);}
+.toggle::after{content:'';position:absolute;width:22px;height:22px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform 0.22s;}
+.toggle.on::after{transform:translateX(22px);}
+/* DAY PANEL */
+.day-overlay{position:fixed;inset:0;z-index:200;background:rgba(26,18,8,0.45);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.22s;}
+.day-overlay.open{opacity:1;pointer-events:all;}
+.day-panel{width:100%;max-width:560px;background:var(--bg);border-radius:28px 28px 0 0;padding-bottom:env(safe-area-inset-bottom,24px);transform:translateY(100%);transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);max-height:80vh;overflow-y:auto;}
+.day-overlay.open .day-panel{transform:translateY(0);}
+.day-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:14px auto 0;}
+.day-head{display:flex;align-items:center;justify-content:space-between;padding:14px 22px 10px;}
+.day-head-title{font-size:18px;font-weight:800;}
+.day-head-close{width:30px;height:30px;border-radius:50%;background:var(--sur2);border:none;cursor:pointer;font-size:15px;color:var(--text2);display:flex;align-items:center;justify-content:center;}
+.day-list{display:flex;flex-direction:column;gap:10px;padding:4px 16px 10px;}
+.day-item{background:var(--surface);border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(60,30,10,0.07);}
+.day-item-stripe{height:3px;background:var(--blue);}
+.day-item-body{padding:13px 15px 12px;display:flex;flex-direction:column;gap:7px;}
+.day-item-time{font-size:13px;font-weight:800;color:var(--accent);}
+.day-item-name{font-size:16px;font-weight:700;line-height:1.25;}
+.day-item-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.day-item-meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;}
+.day-item-cell{display:flex;flex-direction:column;gap:1px;}
+.day-item-lbl{font-size:10px;font-weight:500;color:var(--text3);letter-spacing:0.5px;text-transform:uppercase;}
+.day-item-val{font-size:12px;font-weight:500;color:var(--text2);}
+.day-item-note{font-size:12px;color:var(--text2);background:rgba(48,88,160,0.06);border-radius:8px;padding:7px 10px;line-height:1.6;}
+.day-item-editbtn{align-self:flex-end;padding:5px 14px;border-radius:var(--rchip);background:var(--sur2);border:none;font-size:12px;font-weight:600;color:var(--accent);cursor:pointer;font-family:inherit;}
+.day-empty{text-align:center;padding:30px 20px;color:var(--text3);font-size:14px;}
+.empty{text-align:center;padding:70px 20px;color:var(--text3);}
+.eico{font-size:52px;margin-bottom:14px;}
+.etxt{font-size:15px;font-weight:300;line-height:1.7;}
+.toast{position:fixed;bottom:calc(88px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(14px);background:var(--text);color:#fff;padding:10px 20px;border-radius:var(--rchip);font-size:13px;font-weight:500;z-index:400;opacity:0;pointer-events:none;transition:opacity 0.18s,transform 0.18s;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.login-screen{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:32px 24px;}
+.login-box{width:100%;max-width:360px;display:flex;flex-direction:column;align-items:center;gap:28px;}
+.login-icon{font-size:56px;line-height:1;}
+.login-title{font-size:28px;font-weight:900;letter-spacing:-0.5px;text-align:center;}
+.login-sub{font-size:14px;color:var(--text3);text-align:center;line-height:1.6;margin-top:-16px;}
+.login-form{width:100%;display:flex;flex-direction:column;gap:12px;}
+.login-input{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:16px;color:var(--text);padding:14px 16px;font-size:16px;font-family:inherit;outline:none;text-align:center;}
+.login-input:focus{border-color:var(--accent);}
+.login-btn{width:100%;padding:15px;border-radius:16px;background:var(--accent);border:none;color:#fff;font-size:16px;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 4px 18px rgba(48,88,160,0.28);}
+.user-badge{display:flex;align-items:center;gap:6px;background:var(--sur2);border:1px solid var(--border);border-radius:var(--rchip);padding:5px 12px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;max-width:100px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.setup-banner{margin:0 20px 8px;max-width:860px;margin-left:auto;margin-right:auto;background:rgba(184,50,50,0.08);border:1px solid rgba(184,50,50,0.25);border-radius:14px;padding:10px 14px;font-size:12px;color:var(--red);line-height:1.6;}
+</style>
+</head>
+<body>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-icon">📐</div>
+    <div class="login-title">丈量排程</div>
+    <div class="login-sub">請輸入您的名稱<br>首次登入後將自動記住</div>
+    <div class="login-form">
+      <input class="login-input" id="loginInput" type="text" placeholder="輸入您的名稱" maxlength="20" autocomplete="off">
+      <button class="login-btn" onclick="doLogin()">進入</button>
+    </div>
+  </div>
+</div>
+
+<header class="header">
+  <div class="hinner">
+    <div>
+      <div class="logo-title">丈量排程</div>
+      <div class="logo-sub">MEASUREMENT SCHEDULE</div>
+    </div>
+    <div id="userBadge" class="user-badge" onclick="switchUser()" style="display:none">👤 <span id="userBadgeName"></span></div>
+    <div class="hbtns">
+      <button class="gcal-btn" id="gcalBtn" onclick="connectGoogleCalendar()">📆 連接日曆</button>
+      <div class="view-toggle">
+        <button class="vtbtn active" id="vt-list" onclick="switchView('list')">☰</button>
+        <button class="vtbtn" id="vt-cal" onclick="switchView('cal')">📅</button>
+      </div>
+      <button class="add-btn" onclick="openModal()">＋</button>
+    </div>
+  </div>
+  <div class="stats-row" id="statsBar"></div>
+  <div id="setupBanner"></div>
+  <div class="hdivider"></div>
+</header>
+
+<main class="list" id="listView"></main>
+
+<div class="cal-wrap" id="calView" style="display:none">
+  <div class="cal-header">
+    <button class="cal-nav" onclick="calPrev()">‹</button>
+    <div class="cal-title" id="calTitle"></div>
+    <button class="cal-nav" onclick="calNext()">›</button>
+  </div>
+  <div class="cal-grid" id="calGrid"></div>
+  <div class="cal-events" id="calEvents"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="day-overlay" id="dayOverlay" onclick="closeDayPanel(event)">
+  <div class="day-panel" id="dayPanel">
+    <div class="day-handle"></div>
+    <div class="day-head">
+      <span class="day-head-title" id="dayPanelTitle"></span>
+      <button class="day-head-close" onclick="closeDayPanel()">✕</button>
+    </div>
+    <div class="day-list" id="dayPanelList"></div>
+  </div>
+</div>
+
+<div class="overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div class="mhead">
+      <span class="mhead-title" id="modalTitle">新增待丈量區</span>
+      <button class="mclose" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form">
+      <div class="fgrp">
+        <label class="flbl">案場 / 客戶名稱 *</label>
+        <input class="finput" id="f_name" type="text" placeholder="輸入名稱">
+      </div>
+      <div class="fgrp">
+        <label class="flbl">地址</label>
+        <div style="display:flex;gap:8px;">
+          <input class="finput" id="f_address" type="text" placeholder="輸入地址" style="flex:1;">
+          <button type="button" class="actbtn" style="width:48px;height:48px;border-radius:14px;flex-shrink:0;" title="開啟導航" onclick="openNav(document.getElementById('f_address').value)">🧭</button>
+        </div>
+      </div>
+      <div class="fgrow2">
+        <div class="fgrp">
+          <label class="flbl">狀態</label>
+          <select class="fselect" id="f_status" onchange="onStatusChange()">
+            <option value="待安排">待安排</option>
+            <option value="已排定">已排定</option>
+            <option value="已完成">已完成</option>
+          </select>
+        </div>
+        <div class="fgrp">
+          <label class="flbl">負責人</label>
+          <input class="finput" id="f_owner" type="text" placeholder="姓名">
+        </div>
+      </div>
+      <div class="fgrow2" id="scheduleRow">
+        <div class="fgrp">
+          <label class="flbl">丈量日期</label>
+          <input class="finput" id="f_date" type="date">
+        </div>
+        <div class="fgrp">
+          <label class="flbl">丈量時間</label>
+          <input class="finput" id="f_time" type="time">
+        </div>
+      </div>
+      <div class="fgrp">
+        <label class="flbl">備註 / 詳細資訊</label>
+        <textarea class="ftextarea" id="f_note" placeholder="丈量注意事項、聯絡方式…"></textarea>
+      </div>
+      <div class="fgrp">
+        <label class="flbl">操作者</label>
+        <input class="finput" id="f_operator" type="text" placeholder="您的姓名">
+      </div>
+      <div class="gcal-row" id="gcalRow" style="display:none">
+        <span>📆 同步到 Google 日曆</span>
+        <button class="toggle" id="toggle_gcal" onclick="toggleGcalSync()"></button>
+      </div>
+      <button class="savebtn" onclick="saveItem()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+// ══════════════════════════════════════════════════════════════
+// 設定區 —— 部署前只要填入「一個」Firebase 即時資料庫網址
+// (跟案廠 App 用不同的 Firebase 專案，兩邊資料完全分開、互不相通)
+// 範例：https://your-project-default-rtdb.asia-southeast1.firebasedatabase.app
+// ══════════════════════════════════════════════════════════════
+const FIREBASE_DB_URL = 'https://measurement-tracker-a3c98-default-rtdb.asia-southeast1.firebasedatabase.app';
+
+// Google Calendar 同步用（選填）。留空則隱藏「連接日曆」功能。
+// 到 Google Cloud Console 建立 OAuth 用戶端 ID（網頁應用程式）取得。
+const GOOGLE_CLIENT_ID = '';
+const GOOGLE_SCOPE = 'https://www.googleapis.com/auth/calendar.events';
+
+const NAV_APP_SCHEME = ''; // 若查到「導航王TM」URL Scheme 可填入，留空則使用 Google 地圖導航
+
+// ══════════════════════════════════════════════════════════════
+
+const FIREBASE_READY = FIREBASE_DB_URL && !FIREBASE_DB_URL.startsWith('YOUR_');
+let eventSource=null, itemsMap={};
+if(!FIREBASE_READY){
+  document.getElementById('setupBanner').innerHTML =
+    `<div class="setup-banner">⚠️ 尚未設定資料庫網址，目前無法跨裝置同步。請依照說明文件建立一個 Firebase 即時資料庫並填入 index.html 頂端的設定區。</div>`;
+}
+
+// ── 即時資料庫存取（純 REST + SSE，不需要 SDK）──
+function dbPath(id){ return `${FIREBASE_DB_URL}/users/${currentUserId}/measurements${id?('/'+id):''}.json`; }
+async function dbPost(data){
+  const res=await fetch(dbPath(),{method:'POST',body:JSON.stringify(data)});
+  if(!res.ok) throw new Error('POST failed');
+  return (await res.json()).name;
+}
+async function dbPatch(id,data){
+  const res=await fetch(dbPath(id),{method:'PATCH',body:JSON.stringify(data)});
+  if(!res.ok) throw new Error('PATCH failed');
+}
+async function dbDelete(id){
+  const res=await fetch(dbPath(id),{method:'DELETE'});
+  if(!res.ok) throw new Error('DELETE failed');
+}
+function refreshItemsFromMap(){
+  items=Object.entries(itemsMap).map(([id,d])=>({id,...d}));
+  render();
+}
+
+window.openNav=(address)=>{
+  if(!address){ toast('尚未填寫地址'); return; }
+  const enc=encodeURIComponent(address);
+  if(NAV_APP_SCHEME){ window.location.href=NAV_APP_SCHEME+enc; }
+  else{ window.open('https://www.google.com/maps/dir/?api=1&destination='+enc,'_blank'); }
+};
+
+let items=[], editId=null, currentView='list';
+let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
+let currentUserId=null, currentUserName=null;
+
+// ── login (same simple name-based pattern as the case tracker, separate storage key) ──
+function doLogin(){
+  const name=document.getElementById('loginInput').value.trim();
+  if(!name){ document.getElementById('loginInput').focus(); return; }
+  let uid=localStorage.getItem('meastracker_uid');
+  if(!uid){ uid='u_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,6); }
+  localStorage.setItem('meastracker_uid', uid);
+  localStorage.setItem('meastracker_uname', name);
+  startApp(uid, name);
+}
+window.doLogin=doLogin;
+document.getElementById('loginInput').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+
+function startApp(uid, name){
+  currentUserId=uid; currentUserName=name;
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('userBadge').style.display='flex';
+  document.getElementById('userBadgeName').textContent=name;
+  if(!FIREBASE_READY){ items=[]; render(); return; }
+
+  if(eventSource) eventSource.close();
+  itemsMap={};
+  document.getElementById('listView').innerHTML=`<div class="empty"><div class="eico">⏳</div><div class="etxt">連線中…</div></div>`;
+
+  eventSource = new EventSource(dbPath());
+  eventSource.addEventListener('put', e=>{
+    const {path,data}=JSON.parse(e.data);
+    if(path==='/'){ itemsMap=data||{}; }
+    else{ const id=path.slice(1).split('/')[0]; if(data===null){ delete itemsMap[id]; } else{ itemsMap[id]=data; } }
+    refreshItemsFromMap();
+  });
+  eventSource.addEventListener('patch', e=>{
+    const {path,data}=JSON.parse(e.data);
+    const id=path.slice(1).split('/')[0];
+    if(id){ itemsMap[id]={...(itemsMap[id]||{}),...data}; refreshItemsFromMap(); }
+  });
+  eventSource.onerror = ()=>{
+    if(items.length===0){ document.getElementById('listView').innerHTML=`<div class="empty"><div class="eico">⚠️</div><div class="etxt">連線失敗，請檢查網路</div></div>`; }
+  };
+}
+
+window.switchUser=()=>{
+  if(!confirm('切換使用者將會登出，確定嗎？')) return;
+  localStorage.removeItem('meastracker_uid');
+  localStorage.removeItem('meastracker_uname');
+  if(eventSource){ eventSource.close(); eventSource=null; }
+  document.getElementById('userBadge').style.display='none';
+  document.getElementById('loginInput').value='';
+  document.getElementById('loginScreen').style.display='flex';
+};
+
+const _savedUid=localStorage.getItem('meastracker_uid'), _savedName=localStorage.getItem('meastracker_uname');
+if(_savedUid && _savedName){ startApp(_savedUid,_savedName); }
+else{ document.getElementById('loginScreen').style.display='flex'; }
+
+// ── helpers ──
+const today=()=>new Date().toISOString().split('T')[0];
+const fmt=d=>{ if(!d)return'—'; const[,m,dd]=d.split('-'); return`${m}/${dd}`; };
+function ago(ts){
+  if(!ts)return'';
+  const ms=ts?.toMillis?ts.toMillis():ts;
+  const m=Math.floor((Date.now()-ms)/60000);
+  if(m<1)return'剛才'; if(m<60)return`${m}分前`;
+  const h=Math.floor(m/60); if(h<24)return`${h}小時前`;
+  return`${Math.floor(h/24)}天前`;
+}
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2400); }
+window.onStatusChange=()=>{
+  const s=document.getElementById('f_status').value;
+  document.getElementById('scheduleRow').style.display=(s==='待安排')?'none':'grid';
+  document.getElementById('gcalRow').style.display=(s==='待安排'||!GOOGLE_CLIENT_ID||!gcalSignedIn)?'none':'flex';
+};
+
+// ── card HTML ──
+function cardHTML(it){
+  const isDone=it.status==='已完成', isSched=it.status==='已排定';
+  return`<div class="card ${isSched?'scheduled':''} ${isDone?'done-card':''}">
+    <div class="cstripe"></div>
+    <div class="ctop">
+      <div class="cleft">
+        <div class="cname">${it.name}</div>
+        <div class="cchips">
+          <span class="chip ch-${it.status}">${it.status}</span>
+          ${it.gcalEventId?'<span class="chip" style="background:rgba(48,88,160,0.10);color:var(--blue)">📆 已同步日曆</span>':''}
+        </div>
+      </div>
+      <div class="cacts">
+        ${!isDone?`<button class="actbtn done-btn" title="標記完成" onclick="markDone('${it.id}')">✓</button>`:''}
+        <button class="actbtn" onclick="openEdit('${it.id}')">✏️</button>
+        <button class="actbtn" onclick="deleteItem('${it.id}')" style="color:var(--red)">🗑</button>
+      </div>
+    </div>
+    <div class="cbody">
+      <div class="irow">
+        <div class="icell"><span class="ilbl">負責人</span><span class="ival">${it.owner||'—'}</span></div>
+        <div class="icell"><span class="ilbl">丈量時間</span><span class="ival">${it.scheduledDate?fmt(it.scheduledDate)+(it.scheduledTime?' '+it.scheduledTime:''):'尚未安排'}</span></div>
+      </div>
+      ${it.address?`<div class="addr-row"><span class="ival">📍 ${it.address}</span><button class="actbtn" style="width:30px;height:30px;font-size:13px;flex-shrink:0;" title="導航" onclick="openNav('${it.address.replace(/'/g,"\\'")}')">🧭</button></div>`:''}
+      ${it.note?`<div class="noteblock">${it.note.replace(/\n/g,'<br>')}</div>`:''}
+    </div>
+    <div class="cfoot"><span class="fuser">👤 ${it.lastOperator||'—'}</span><span class="ftime">${ago(it.updatedAt)}</span></div>
+  </div>`;
+}
+
+function render(){
+  updateStats();
+  if(currentView==='list') renderList(); else renderCal();
+}
+
+function renderList(){
+  const pending=items.filter(i=>i.status==='待安排');
+  const sched=[...items.filter(i=>i.status==='已排定')].sort((a,b)=>((a.scheduledDate||'')+((a.scheduledTime||''))).localeCompare((b.scheduledDate||'')+(b.scheduledTime||'')));
+  const done=items.filter(i=>i.status==='已完成');
+  const el=document.getElementById('listView');
+  let html='';
+  if(!items.length){ el.innerHTML=`<div class="empty"><div class="eico">📐</div><div class="etxt">尚無待丈量區<br>點右上角 ＋ 新增</div></div>`; return; }
+  if(pending.length){ html+=`<div class="section-head"><div class="section-head-title">📋 待安排（${pending.length}）</div><div class="section-divider"></div></div>`+pending.map(cardHTML).join(''); }
+  if(sched.length){ html+=`<div class="section-head"><div class="section-head-title">📆 已排定（${sched.length}）</div><div class="section-divider"></div></div>`+sched.map(cardHTML).join(''); }
+  if(done.length){ html+=`<div class="section-head"><div class="section-head-title">✅ 已完成（${done.length}）</div><div class="section-divider"></div></div>`+done.map(cardHTML).join(''); }
+  el.innerHTML=html;
+}
+
+function updateStats(){
+  const tot=items.length;
+  const pend=items.filter(i=>i.status==='待安排').length;
+  const sch=items.filter(i=>i.status==='已排定').length;
+  const dn=items.filter(i=>i.status==='已完成').length;
+  document.getElementById('statsBar').innerHTML=
+    `<div class="spill"><span class="n">${tot}</span><span class="l">丈量案</span></div>
+     <div class="spill"><span class="n" style="color:var(--amber)">${pend}</span><span class="l">待安排</span></div>
+     <div class="spill"><span class="n" style="color:var(--blue)">${sch}</span><span class="l">已排定</span></div>
+     <div class="spill"><span class="n" style="color:var(--green)">${dn}</span><span class="l">已完成</span></div>`;
+}
+
+// ── calendar ──
+function renderCal(){
+  const months=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  document.getElementById('calTitle').textContent=`${calYear} 年 ${months[calMonth]}`;
+  const firstDay=new Date(calYear,calMonth,1).getDay();
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const daysInPrev=new Date(calYear,calMonth,0).getDate();
+  const td=today();
+  const monthPrefix=`${calYear}-${String(calMonth+1).padStart(2,'0')}`;
+  const dotMap={};
+  items.forEach(it=>{
+    if(it.scheduledDate&&it.scheduledDate.startsWith(monthPrefix)){
+      const d=parseInt(it.scheduledDate.split('-')[2]);
+      (dotMap[d]=dotMap[d]||[]).push(it);
+    }
+  });
+  const dows=['日','一','二','三','四','五','六'];
+  let html=dows.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<firstDay;i++){ const d=daysInPrev-firstDay+1+i; html+=`<div class="cal-day other-month"><span class="cal-dn">${d}</span></div>`; }
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=`${monthPrefix}-${String(d).padStart(2,'0')}`;
+    const isToday=dateStr===td;
+    const dots=dotMap[d]||[];
+    const dotHTML=dots.slice(0,3).map(()=>`<div class="cal-dot"></div>`).join('');
+    html+=`<div class="cal-day ${isToday?'today':''}" onclick="calDayClick(${d})"><span class="cal-dn">${d}</span><div class="cal-dots">${dotHTML}</div></div>`;
+  }
+  document.getElementById('calGrid').innerHTML=html;
+
+  const evs=items.filter(i=>i.scheduledDate&&i.scheduledDate.startsWith(monthPrefix)).sort((a,b)=>((a.scheduledDate||'')+(a.scheduledTime||'')).localeCompare((b.scheduledDate||'')+(b.scheduledTime||'')));
+  if(!evs.length){ document.getElementById('calEvents').innerHTML=`<div class="cal-ev-head">本月無丈量安排</div>`; return; }
+  document.getElementById('calEvents').innerHTML=`<div class="cal-ev-head">本月丈量安排</div>`+evs.map(ev=>`<div class="cal-ev-card">
+      <div class="cal-ev-dot"></div>
+      <div class="cal-ev-info"><div class="cal-ev-name">${ev.name}</div><div class="cal-ev-sub">${ev.scheduledTime?ev.scheduledTime+' · ':''}${ev.owner||''}${ev.address?' · 📍'+ev.address:''}</div></div>
+      <div class="cal-ev-date">${fmt(ev.scheduledDate)}</div>
+    </div>`).join('');
+}
+window.calPrev=()=>{ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCal(); };
+window.calNext=()=>{ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCal(); };
+
+window.calDayClick=(d)=>{
+  const dateStr=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  document.getElementById('dayPanelTitle').textContent=`${calMonth+1}月${d}日 丈量安排`;
+  const dayItems=items.filter(i=>i.scheduledDate===dateStr).sort((a,b)=>(a.scheduledTime||'').localeCompare(b.scheduledTime||''));
+  const list=document.getElementById('dayPanelList');
+  if(!dayItems.length){ list.innerHTML=`<div class="day-empty">這天沒有丈量安排</div>`; }
+  else{
+    list.innerHTML=dayItems.map(it=>`<div class="day-item">
+      <div class="day-item-stripe"></div>
+      <div class="day-item-body">
+        <div class="day-item-time">🕐 ${it.scheduledTime||'時間未定'}</div>
+        <div class="day-item-name">${it.name}</div>
+        <div class="day-item-chips"><span class="chip ch-${it.status}">${it.status}</span>${it.gcalEventId?'<span class="chip" style="background:rgba(48,88,160,0.10);color:var(--blue)">📆 已同步日曆</span>':''}</div>
+        <div class="day-item-meta"><div class="day-item-cell"><span class="day-item-lbl">負責人</span><span class="day-item-val">${it.owner||'—'}</span></div></div>
+        ${it.address?`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><span class="day-item-val" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ${it.address}</span><button class="day-item-editbtn" onclick="openNav('${it.address.replace(/'/g,"\\'")}')">🧭 導航</button></div>`:''}
+        ${it.note?`<div class="day-item-note">${it.note.replace(/\n/g,'<br>')}</div>`:''}
+        <button class="day-item-editbtn" onclick="closeDayPanel();openEdit('${it.id}')">✏️ 編輯</button>
+      </div>
+    </div>`).join('');
+  }
+  document.getElementById('dayOverlay').classList.add('open');
+};
+window.closeDayPanel=(e)=>{ if(e && e.target!==document.getElementById('dayOverlay')) return; document.getElementById('dayOverlay').classList.remove('open'); };
+
+window.switchView=(v)=>{
+  currentView=v;
+  document.getElementById('listView').style.display=v==='list'?'':'none';
+  document.getElementById('calView').style.display=v==='cal'?'':'none';
+  document.getElementById('vt-list').classList.toggle('active',v==='list');
+  document.getElementById('vt-cal').classList.toggle('active',v==='cal');
+  render();
+};
+
+window.markDone=async(id)=>{
+  if(!FIREBASE_READY) return;
+  try{ await dbPatch(id,{status:'已完成',updatedAt:Date.now()}); toast('✅ 已標記完成'); }
+  catch{ toast('❌ 操作失敗'); }
+};
+window.deleteItem=async(id)=>{
+  if(!confirm('確定刪除？'))return;
+  const it=items.find(i=>i.id===id);
+  if(it && it.gcalEventId && gcalSignedIn) await deleteGcalEvent(it.gcalEventId);
+  if(!FIREBASE_READY) return;
+  try{ await dbDelete(id); toast('已刪除'); }
+  catch{ toast('❌ 刪除失敗'); }
+};
+
+// ── modal ──
+function loadFormDraft(it){
+  document.getElementById('f_name').value=it?.name||'';
+  document.getElementById('f_address').value=it?.address||'';
+  document.getElementById('f_status').value=it?.status||'待安排';
+  document.getElementById('f_owner').value=it?.owner||'';
+  document.getElementById('f_date').value=it?.scheduledDate||'';
+  document.getElementById('f_time').value=it?.scheduledTime||'';
+  document.getElementById('f_note').value=it?.note||'';
+  document.getElementById('f_operator').value=it?.operator||'';
+  document.getElementById('toggle_gcal').className='toggle'+((it?.gcalEventId)?' on':'');
+  onStatusChange();
+}
+window.openModal=(id=null)=>{
+  editId=id;
+  document.getElementById('modalTitle').textContent=id?'編輯丈量安排':'新增待丈量區';
+  loadFormDraft(id?items.find(i=>i.id===id):null);
+  document.getElementById('modalOverlay').classList.add('open');
+};
+window.openEdit=id=>window.openModal(id);
+window.closeModal=()=>{ document.getElementById('modalOverlay').classList.remove('open'); editId=null; };
+window.toggleGcalSync=()=>{ const t=document.getElementById('toggle_gcal'); t.className='toggle'+(t.classList.contains('on')?'':' on'); };
+
+window.saveItem=async()=>{
+  if(!FIREBASE_READY){ toast('⚠️ 尚未設定同步伺服器，請見說明文件'); return; }
+  const name=document.getElementById('f_name').value.trim(); if(!name){toast('請輸入名稱');return;}
+  const status=document.getElementById('f_status').value;
+  const data={
+    name, status,
+    address:document.getElementById('f_address').value.trim(),
+    owner:document.getElementById('f_owner').value.trim(),
+    scheduledDate: status==='待安排'?null:(document.getElementById('f_date').value||null),
+    scheduledTime: status==='待安排'?null:(document.getElementById('f_time').value||null),
+    note:document.getElementById('f_note').value.trim(),
+    lastOperator:document.getElementById('f_operator').value.trim()||'未知',
+    updatedAt:Date.now(),
+  };
+  try{
+    let savedId=editId;
+    if(editId){ await dbPatch(editId,data); }
+    else{ savedId=await dbPost({...data,createdAt:Date.now()}); }
+
+    const wantsGcal=document.getElementById('toggle_gcal').classList.contains('on');
+    if(gcalSignedIn && wantsGcal && data.scheduledDate){
+      const existing=items.find(i=>i.id===savedId);
+      const eventId=await upsertGcalEvent(existing?.gcalEventId, data);
+      if(eventId) await dbPatch(savedId,{gcalEventId:eventId});
+    } else if(gcalSignedIn && !wantsGcal){
+      const existing=items.find(i=>i.id===savedId);
+      if(existing?.gcalEventId){ await deleteGcalEvent(existing.gcalEventId); await dbPatch(savedId,{gcalEventId:null}); }
+    }
+    toast('✅ 已儲存'); closeModal();
+  }catch(e){ toast('❌ 儲存失敗'); console.error(e); }
+};
+
+// ── Google Calendar sync (Google Identity Services) ──
+let gcalSignedIn=false, gcalToken=null;
+if(!GOOGLE_CLIENT_ID){ document.getElementById('gcalBtn').style.display='none'; }
+
+window.connectGoogleCalendar=()=>{
+  if(!GOOGLE_CLIENT_ID){ toast('尚未設定 Google 用戶端 ID'); return; }
+  if(gcalSignedIn){ toast('已連接 Google 日曆'); return; }
+  if(!window.google){ toast('Google 服務載入中，請稍後再試'); return; }
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: GOOGLE_SCOPE,
+    callback: (resp)=>{
+      if(resp.error){ toast('❌ 連接失敗'); return; }
+      gcalToken=resp.access_token; gcalSignedIn=true;
+      document.getElementById('gcalBtn').textContent='📆 已連接日曆';
+      document.getElementById('gcalBtn').classList.add('on');
+      toast('✅ 已連接 Google 日曆');
+    }
+  });
+  client.requestAccessToken();
+};
+
+async function upsertGcalEvent(existingEventId, data){
+  if(!gcalToken) return null;
+  const start=data.scheduledTime?`${data.scheduledDate}T${data.scheduledTime}:00`:`${data.scheduledDate}`;
+  const isAllDay=!data.scheduledTime;
+  const endDate=(()=>{ if(!isAllDay) return null; const d=new Date(data.scheduledDate); d.setDate(d.getDate()+1); return d.toISOString().split('T')[0]; })();
+  const body={
+    summary:`丈量：${data.name}`,
+    location:data.address||'',
+    description:data.note||'',
+    start:isAllDay?{date:data.scheduledDate}:{dateTime:start,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone},
+    end:isAllDay?{date:endDate}:{dateTime:new Date(new Date(start).getTime()+60*60*1000).toISOString(),timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone},
+  };
+  const url=existingEventId
+    ? `https://www.googleapis.com/calendar/v3/calendars/primary/events/${existingEventId}`
+    : `https://www.googleapis.com/calendar/v3/calendars/primary/events`;
+  const method=existingEventId?'PATCH':'POST';
+  const res=await fetch(url,{method,headers:{'Authorization':`Bearer ${gcalToken}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!res.ok){ toast('⚠️ Google 日曆同步失敗'); return existingEventId||null; }
+  const json=await res.json();
+  return json.id;
+}
+async function deleteGcalEvent(eventId){
+  if(!gcalToken||!eventId) return;
+  await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,{method:'DELETE',headers:{'Authorization':`Bearer ${gcalToken}`}}).catch(()=>{});
+}
+
+if(GOOGLE_CLIENT_ID){
+  const s=document.createElement('script');
+  s.src='https://accounts.google.com/gsi/client';
+  s.async=true; document.head.appendChild(s);
+}
+
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>

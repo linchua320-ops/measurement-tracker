@@ -1,0 +1,15 @@
+{
+  "name": "丈量排程",
+  "short_name": "丈量排程",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f7f3ee",
+  "theme_color": "#f7f3ee",
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
