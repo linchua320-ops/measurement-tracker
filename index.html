@@ -8,6 +8,9 @@
 <meta name="apple-mobile-web-app-title" content="丈量排程">
 <meta name="theme-color" content="#f7f3ee">
 <link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <title>丈量排程</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
@@ -15,7 +18,7 @@
   --bg:#f7f3ee; --surface:#ffffff; --sur2:#f0ebe3; --border:#e5ddd3;
   --text:#1a1208; --text2:#5c4a35; --text3:#a8917a;
   --accent:#3058a0; --acc2:#1f3f7a;
-  --red:#b83232; --green:#2e7a50; --blue:#3058a0; --amber:#8a5a10;
+  --red:#b83232; --green:#2e7a50; --blue:#3058a0; --amber:#8a5a10; --violet:#6b4fa0; --orange:#c2650c;
   --rcard:22px; --rbtn:14px; --rchip:100px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -56,6 +59,21 @@ body{font-family:'Noto Sans TC',-apple-system,sans-serif;background:var(--bg);co
 .ch-待安排{background:rgba(138,90,16,0.12);color:var(--amber);}
 .ch-已排定{background:rgba(48,88,160,0.10);color:var(--blue);}
 .ch-已完成{background:rgba(46,122,80,0.12);color:var(--green);}
+.ch-install{background:rgba(107,79,160,0.12);color:var(--violet);}
+.ch-payment{background:rgba(194,101,12,0.12);color:var(--orange);}
+.ch-overdue{background:rgba(184,50,50,0.14);color:var(--red);font-weight:700;}
+.photo-grid{display:flex;flex-wrap:wrap;gap:8px;}
+.photo-thumb{position:relative;width:60px;height:60px;border-radius:10px;overflow:hidden;border:1px solid var(--border);flex-shrink:0;}
+.photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;cursor:pointer;}
+.photo-thumb .rm{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;}
+.photo-add{width:60px;height:60px;border-radius:10px;border:1.5px dashed var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text3);cursor:pointer;flex-shrink:0;}
+.card-photos{display:flex;flex-direction:column;gap:8px;}
+.card-photo-cat{display:flex;flex-direction:column;gap:4px;}
+.card-photo-row{display:flex;gap:6px;flex-wrap:wrap;}
+.card-photo-row img{width:44px;height:44px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid var(--border);}
+.checkrow{display:flex;align-items:center;gap:8px;padding-top:22px;}
+.checkrow input{width:18px;height:18px;accent-color:var(--accent);}
+.checkrow label{font-size:13px;font-weight:600;color:var(--text2);}
 .cacts{display:flex;gap:6px;flex-shrink:0;padding-top:2px;}
 .actbtn{width:34px;height:34px;border-radius:12px;background:var(--sur2);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;}
 .actbtn:active{background:var(--border);}
@@ -77,7 +95,7 @@ body{font-family:'Noto Sans TC',-apple-system,sans-serif;background:var(--bg);co
 .cal-nav{width:36px;height:36px;border-radius:12px;background:var(--surface);border:1px solid var(--border);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--text2);}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:20px;}
 .cal-dow{text-align:center;font-size:11px;font-weight:600;color:var(--text3);padding:4px 0 8px;}
-.cal-day{aspect-ratio:1;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:5px;cursor:pointer;position:relative;}
+.cal-day{aspect-ratio:1;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:5px;cursor:pointer;position:relative;overflow:hidden;}
 .cal-day:hover{background:var(--sur2);}
 .cal-day.today{background:var(--accent);}
 .cal-day.today .cal-dn{color:#fff;font-weight:700;}
@@ -85,6 +103,8 @@ body{font-family:'Noto Sans TC',-apple-system,sans-serif;background:var(--bg);co
 .cal-dn{font-size:13px;font-weight:500;line-height:1;}
 .cal-dots{display:flex;gap:2px;justify-content:center;margin-top:3px;}
 .cal-dot{width:5px;height:5px;border-radius:50%;background:var(--blue);}
+.cal-mini-list{display:flex;flex-direction:column;align-items:center;gap:0px;margin-top:2px;width:100%;overflow:hidden;}
+.cal-ev-mini{font-size:8.5px;font-weight:700;line-height:1.25;white-space:nowrap;}
 .cal-events{display:flex;flex-direction:column;gap:8px;}
 .cal-ev-head{font-size:12px;font-weight:700;color:var(--text3);letter-spacing:0.6px;text-transform:uppercase;padding:8px 0 4px;}
 .cal-ev-card{background:var(--surface);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(60,30,10,0.06);}
@@ -264,13 +284,56 @@ body{font-family:'Noto Sans TC',-apple-system,sans-serif;background:var(--bg);co
         <label class="flbl">備註 / 詳細資訊</label>
         <textarea class="ftextarea" id="f_note" placeholder="丈量注意事項、聯絡方式…"></textarea>
       </div>
+      <div class="fgrow2">
+        <div class="fgrp">
+          <label class="flbl">🟣 安排安裝時間</label>
+          <input class="finput" id="f_installDate" type="date" oninput="updateGcalRows()">
+        </div>
+        <div class="checkrow">
+          <input type="checkbox" id="f_installDone">
+          <label for="f_installDone">已安裝</label>
+        </div>
+      </div>
+      <div class="fgrow2">
+        <div class="fgrp">
+          <label class="flbl">🟠 預計收尾款日期</label>
+          <input class="finput" id="f_paymentDate" type="date" oninput="updateGcalRows()">
+        </div>
+        <div class="checkrow">
+          <input type="checkbox" id="f_paymentDone">
+          <label for="f_paymentDone">已收款</label>
+        </div>
+      </div>
+      <div class="fgrp">
+        <label class="flbl">📷 現場照片</label>
+        <div class="photo-grid" id="grid_sitePhotos"></div>
+        <input type="file" id="file_sitePhotos" accept="image/*" multiple style="display:none" onchange="handlePhotoSelect(event,'sitePhotos')">
+      </div>
+      <div class="fgrp">
+        <label class="flbl">📄 交製單</label>
+        <div class="photo-grid" id="grid_orderSlips"></div>
+        <input type="file" id="file_orderSlips" accept="image/*" multiple style="display:none" onchange="handlePhotoSelect(event,'orderSlips')">
+      </div>
+      <div class="fgrp">
+        <label class="flbl">💰 收款截圖</label>
+        <div class="photo-grid" id="grid_paymentShots"></div>
+        <input type="file" id="file_paymentShots" accept="image/*" multiple style="display:none" onchange="handlePhotoSelect(event,'paymentShots')">
+      </div>
       <div class="fgrp">
         <label class="flbl">操作者</label>
         <input class="finput" id="f_operator" type="text" placeholder="您的姓名">
       </div>
       <div class="gcal-row" id="gcalRow" style="display:none">
-        <span>📆 同步到 Google 日曆</span>
-        <button class="toggle" id="toggle_gcal" onclick="toggleGcalSync()"></button>
+        <span>🔵 丈量時間同步到 Google 日曆</span>
+        <button class="toggle" id="toggle_gcal" onclick="toggleGcalSync('toggle_gcal')"></button>
+      </div>
+      <div class="gcal-row" id="gcalRowInstall" style="display:none">
+        <span>🟣 安裝日期同步到 Google 日曆</span>
+        <button class="toggle" id="toggle_gcal_install" onclick="toggleGcalSync('toggle_gcal_install')"></button>
+      </div>
+      <div class="gcal-row" id="gcalRowPayment" style="display:none">
+        <span>🟠 收尾款日期同步到 Google 日曆</span>
+        <button class="toggle" id="toggle_gcal_payment" onclick="toggleGcalSync('toggle_gcal_payment')"></button>
       </div>
       <button class="savebtn" onclick="saveItem()">儲存</button>
     </div>
@@ -328,16 +391,81 @@ window.openNav=(address)=>{
   else{ window.open('https://www.google.com/maps/dir/?api=1&destination='+enc,'_blank'); }
 };
 
+// ── photo upload (compressed client-side, stored as base64 data URLs in the DB) ──
+let draftPhotos={ sitePhotos:[], orderSlips:[], paymentShots:[] };
+window.draftPhotos=draftPhotos;
+
+function renderPhotoGrid(key){
+  const grid=document.getElementById('grid_'+key);
+  const imgs=draftPhotos[key];
+  grid.innerHTML = imgs.map((src,i)=>`<div class="photo-thumb"><img src="${src}" onclick="openImage(draftPhotos['${key}'][${i}])"><button class="rm" onclick="removePhoto('${key}',${i})">✕</button></div>`).join('')
+    + `<div class="photo-add" onclick="document.getElementById('file_${key}').click()">＋</div>`;
+}
+window.removePhoto=(key,i)=>{ draftPhotos[key].splice(i,1); renderPhotoGrid(key); };
+
+function compressImage(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const maxW=1280;
+        const scale=Math.min(1, maxW/img.width);
+        const w=Math.round(img.width*scale)||1, h=Math.round(img.height*scale)||1;
+        const canvas=document.createElement('canvas');
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',0.72));
+      };
+      img.onerror=()=>reject(new Error('image load failed'));
+      img.src=e.target.result;
+    };
+    reader.onerror=()=>reject(new Error('file read failed'));
+    reader.readAsDataURL(file);
+  });
+}
+
+window.handlePhotoSelect=async(e,key)=>{
+  const files=Array.from(e.target.files||[]);
+  e.target.value='';
+  if(!files.length) return;
+  toast('📷 處理圖片中…');
+  for(const f of files){
+    try{ const dataUrl=await compressImage(f); draftPhotos[key].push(dataUrl); }
+    catch{ toast('⚠️ 有一張圖片處理失敗'); }
+  }
+  renderPhotoGrid(key);
+};
+
+window.viewPhoto=(id,key,i)=>{ const src=itemsMap[id]?.[key]?.[i]; if(src) openImage(src); };
+
+window.openImage=(dataUrl)=>{
+  if(!dataUrl) return;
+  try{
+    const [meta,b64]=dataUrl.split(',');
+    const mime=meta.match(/:(.*?);/)[1];
+    const bin=atob(b64);
+    const arr=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+    window.open(URL.createObjectURL(new Blob([arr],{type:mime})),'_blank');
+  }catch{ window.open(dataUrl,'_blank'); }
+};
+
 let items=[], editId=null, currentView='list';
 let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
 let currentUserId=null, currentUserName=null;
 
-// ── login (same simple name-based pattern as the case tracker, separate storage key) ──
+// ── login (id is derived from the name itself, so the same name always maps
+//    to the same storage path — this is what makes phone/computer sync work) ──
+function nameToId(name){
+  let h=5381;
+  for(let i=0;i<name.length;i++){ h=((h*33)^name.charCodeAt(i))>>>0; }
+  return 'u_'+h.toString(36);
+}
 function doLogin(){
   const name=document.getElementById('loginInput').value.trim();
   if(!name){ document.getElementById('loginInput').focus(); return; }
-  let uid=localStorage.getItem('meastracker_uid');
-  if(!uid){ uid='u_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,6); }
+  const uid=nameToId(name);
   localStorage.setItem('meastracker_uid', uid);
   localStorage.setItem('meastracker_uname', name);
   startApp(uid, name);
@@ -383,8 +511,8 @@ window.switchUser=()=>{
   document.getElementById('loginScreen').style.display='flex';
 };
 
-const _savedUid=localStorage.getItem('meastracker_uid'), _savedName=localStorage.getItem('meastracker_uname');
-if(_savedUid && _savedName){ startApp(_savedUid,_savedName); }
+const _savedName=localStorage.getItem('meastracker_uname');
+if(_savedName){ startApp(nameToId(_savedName), _savedName); }
 else{ document.getElementById('loginScreen').style.display='flex'; }
 
 // ── helpers ──
@@ -399,15 +527,45 @@ function ago(ts){
   return`${Math.floor(h/24)}天前`;
 }
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2400); }
+function updateGcalRows(){
+  const s=document.getElementById('f_status').value;
+  const gReady=!!GOOGLE_CLIENT_ID && gcalSignedIn;
+  const hasInstall=!!document.getElementById('f_installDate').value;
+  const hasPayment=!!document.getElementById('f_paymentDate').value;
+  document.getElementById('gcalRow').style.display=(s==='待安排'||!gReady)?'none':'flex';
+  document.getElementById('gcalRowInstall').style.display=(!hasInstall||!gReady)?'none':'flex';
+  document.getElementById('gcalRowPayment').style.display=(!hasPayment||!gReady)?'none':'flex';
+}
 window.onStatusChange=()=>{
   const s=document.getElementById('f_status').value;
   document.getElementById('scheduleRow').style.display=(s==='待安排')?'none':'grid';
-  document.getElementById('gcalRow').style.display=(s==='待安排'||!GOOGLE_CLIENT_ID||!gcalSignedIn)?'none':'flex';
+  updateGcalRows();
 };
+window.updateGcalRows=updateGcalRows;
 
 // ── card HTML ──
+function photoStripHTML(it){
+  const cats=[['sitePhotos','📷 現場照片'],['orderSlips','📄 交製單'],['paymentShots','💰 收款截圖']];
+  const parts=cats.filter(([k])=>(it[k]||[]).length).map(([k,label])=>{
+    const imgs=it[k];
+    const thumbs=imgs.slice(0,4).map((src,i)=>`<img src="${src}" onclick="viewPhoto('${it.id}','${k}',${i})">`).join('');
+    return `<div class="card-photo-cat"><span class="ilbl">${label}（${imgs.length}）</span><div class="card-photo-row">${thumbs}</div></div>`;
+  });
+  return parts.length?`<div class="card-photos">${parts.join('')}</div>`:'';
+}
 function cardHTML(it){
   const isDone=it.status==='已完成', isSched=it.status==='已排定';
+  const td=today();
+  const measureOverdue = it.scheduledDate && it.scheduledDate<td && !isDone;
+  const installOverdue = it.installDate && it.installDate<td && !it.installDone;
+  const paymentOverdue = it.paymentDate && it.paymentDate<td && !it.paymentDone;
+  const extraChips=`
+    ${it.scheduledDate?`<span class="chip" style="background:rgba(48,88,160,0.10);color:var(--blue)">🔵 丈量 ${fmt(it.scheduledDate)}${it.scheduledTime?' '+it.scheduledTime:''}</span>`:''}
+    ${measureOverdue?`<span class="chip ch-overdue">⚠️ 丈量逾期</span>`:''}
+    ${it.installDate?`<span class="chip ch-install">🟣 安裝 ${fmt(it.installDate)}${it.installDone?' ✓':''}</span>`:''}
+    ${installOverdue?`<span class="chip ch-overdue">⚠️ 安裝逾期</span>`:''}
+    ${it.paymentDate?`<span class="chip ch-payment">🟠 收款 ${fmt(it.paymentDate)}${it.paymentDone?' ✓':''}</span>`:''}
+    ${paymentOverdue?`<span class="chip ch-overdue">⚠️ 收款逾期</span>`:''}`;
   return`<div class="card ${isSched?'scheduled':''} ${isDone?'done-card':''}">
     <div class="cstripe"></div>
     <div class="ctop">
@@ -416,6 +574,7 @@ function cardHTML(it){
         <div class="cchips">
           <span class="chip ch-${it.status}">${it.status}</span>
           ${it.gcalEventId?'<span class="chip" style="background:rgba(48,88,160,0.10);color:var(--blue)">📆 已同步日曆</span>':''}
+          ${extraChips}
         </div>
       </div>
       <div class="cacts">
@@ -431,6 +590,7 @@ function cardHTML(it){
       </div>
       ${it.address?`<div class="addr-row"><span class="ival">📍 ${it.address}</span><button class="actbtn" style="width:30px;height:30px;font-size:13px;flex-shrink:0;" title="導航" onclick="openNav('${it.address.replace(/'/g,"\\'")}')">🧭</button></div>`:''}
       ${it.note?`<div class="noteblock">${it.note.replace(/\n/g,'<br>')}</div>`:''}
+      ${photoStripHTML(it)}
     </div>
     <div class="cfoot"><span class="fuser">👤 ${it.lastOperator||'—'}</span><span class="ftime">${ago(it.updatedAt)}</span></div>
   </div>`;
@@ -459,11 +619,18 @@ function updateStats(){
   const pend=items.filter(i=>i.status==='待安排').length;
   const sch=items.filter(i=>i.status==='已排定').length;
   const dn=items.filter(i=>i.status==='已完成').length;
+  const td=today();
+  const overdue=items.filter(i=>
+    (i.scheduledDate&&i.scheduledDate<td&&i.status!=='已完成') ||
+    (i.installDate&&i.installDate<td&&!i.installDone) ||
+    (i.paymentDate&&i.paymentDate<td&&!i.paymentDone)
+  ).length;
   document.getElementById('statsBar').innerHTML=
     `<div class="spill"><span class="n">${tot}</span><span class="l">丈量案</span></div>
      <div class="spill"><span class="n" style="color:var(--amber)">${pend}</span><span class="l">待安排</span></div>
      <div class="spill"><span class="n" style="color:var(--blue)">${sch}</span><span class="l">已排定</span></div>
-     <div class="spill"><span class="n" style="color:var(--green)">${dn}</span><span class="l">已完成</span></div>`;
+     <div class="spill"><span class="n" style="color:var(--green)">${dn}</span><span class="l">已完成</span></div>
+     ${overdue?`<div class="spill" style="border-color:rgba(184,50,50,0.3);"><span class="n" style="color:var(--red)">${overdue}</span><span class="l">⚠️ 逾期</span></div>`:''}`;
 }
 
 // ── calendar ──
@@ -475,11 +642,19 @@ function renderCal(){
   const daysInPrev=new Date(calYear,calMonth,0).getDate();
   const td=today();
   const monthPrefix=`${calYear}-${String(calMonth+1).padStart(2,'0')}`;
-  const dotMap={};
+  const dayEventsMap={};
   items.forEach(it=>{
     if(it.scheduledDate&&it.scheduledDate.startsWith(monthPrefix)){
       const d=parseInt(it.scheduledDate.split('-')[2]);
-      (dotMap[d]=dotMap[d]||[]).push(it);
+      (dayEventsMap[d]=dayEventsMap[d]||[]).push({type:'measure',time:it.scheduledTime||''});
+    }
+    if(it.installDate&&it.installDate.startsWith(monthPrefix)){
+      const d=parseInt(it.installDate.split('-')[2]);
+      (dayEventsMap[d]=dayEventsMap[d]||[]).push({type:'install',time:''});
+    }
+    if(it.paymentDate&&it.paymentDate.startsWith(monthPrefix)){
+      const d=parseInt(it.paymentDate.split('-')[2]);
+      (dayEventsMap[d]=dayEventsMap[d]||[]).push({type:'payment',time:''});
     }
   });
   const dows=['日','一','二','三','四','五','六'];
@@ -488,34 +663,55 @@ function renderCal(){
   for(let d=1;d<=daysInMonth;d++){
     const dateStr=`${monthPrefix}-${String(d).padStart(2,'0')}`;
     const isToday=dateStr===td;
-    const dots=dotMap[d]||[];
-    const dotHTML=dots.slice(0,3).map(()=>`<div class="cal-dot"></div>`).join('');
-    html+=`<div class="cal-day ${isToday?'today':''}" onclick="calDayClick(${d})"><span class="cal-dn">${d}</span><div class="cal-dots">${dotHTML}</div></div>`;
+    const evs=(dayEventsMap[d]||[]).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+    const maxShow=2;
+    const miniHTML=evs.slice(0,maxShow).map(ev=>{
+      const color=isToday?'#fff':(ev.type==='measure'?'var(--blue)':ev.type==='install'?'var(--violet)':'var(--orange)');
+      const txt=ev.type==='measure'?(ev.time||'全天'):(ev.type==='install'?'安裝':'收款');
+      return `<div class="cal-ev-mini" style="color:${color}">${txt}</div>`;
+    }).join('')+(evs.length>maxShow?`<div class="cal-ev-mini" style="color:${isToday?'#fff':'var(--text3)'}">+${evs.length-maxShow}</div>`:'');
+    html+=`<div class="cal-day ${isToday?'today':''}" onclick="calDayClick(${d})"><span class="cal-dn">${d}</span><div class="cal-mini-list">${miniHTML}</div></div>`;
   }
   document.getElementById('calGrid').innerHTML=html;
 
-  const evs=items.filter(i=>i.scheduledDate&&i.scheduledDate.startsWith(monthPrefix)).sort((a,b)=>((a.scheduledDate||'')+(a.scheduledTime||'')).localeCompare((b.scheduledDate||'')+(b.scheduledTime||'')));
-  if(!evs.length){ document.getElementById('calEvents').innerHTML=`<div class="cal-ev-head">本月無丈量安排</div>`; return; }
-  document.getElementById('calEvents').innerHTML=`<div class="cal-ev-head">本月丈量安排</div>`+evs.map(ev=>`<div class="cal-ev-card">
-      <div class="cal-ev-dot"></div>
-      <div class="cal-ev-info"><div class="cal-ev-name">${ev.name}</div><div class="cal-ev-sub">${ev.scheduledTime?ev.scheduledTime+' · ':''}${ev.owner||''}${ev.address?' · 📍'+ev.address:''}</div></div>
-      <div class="cal-ev-date">${fmt(ev.scheduledDate)}</div>
-    </div>`).join('');
+  const evsAll=[
+    ...items.filter(i=>i.scheduledDate&&i.scheduledDate.startsWith(monthPrefix)).map(it=>({...it,_type:'measure',_date:it.scheduledDate,_time:it.scheduledTime||''})),
+    ...items.filter(i=>i.installDate&&i.installDate.startsWith(monthPrefix)).map(it=>({...it,_type:'install',_date:it.installDate,_time:''})),
+    ...items.filter(i=>i.paymentDate&&i.paymentDate.startsWith(monthPrefix)).map(it=>({...it,_type:'payment',_date:it.paymentDate,_time:''})),
+  ].sort((a,b)=>((a._date||'')+(a._time||'')).localeCompare((b._date||'')+(b._time||'')));
+  if(!evsAll.length){ document.getElementById('calEvents').innerHTML=`<div class="cal-ev-head">本月無行程</div>`; return; }
+  document.getElementById('calEvents').innerHTML=`<div class="cal-ev-head">本月行程</div>`+evsAll.map(ev=>{
+    const color=ev._type==='measure'?'var(--blue)':ev._type==='install'?'var(--violet)':'var(--orange)';
+    const label=ev._type==='measure'?'🔵 丈量':ev._type==='install'?'🟣 安裝':'🟠 收款';
+    return `<div class="cal-ev-card">
+      <div class="cal-ev-dot" style="background:${color}"></div>
+      <div class="cal-ev-info"><div class="cal-ev-name">${label} · ${ev.name}</div><div class="cal-ev-sub">${ev._time?ev._time+' · ':''}${ev.owner||''}${ev.address?' · 📍'+ev.address:''}</div></div>
+      <div class="cal-ev-date">${fmt(ev._date)}</div>
+    </div>`;
+  }).join('');
 }
 window.calPrev=()=>{ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCal(); };
 window.calNext=()=>{ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCal(); };
 
 window.calDayClick=(d)=>{
   const dateStr=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-  document.getElementById('dayPanelTitle').textContent=`${calMonth+1}月${d}日 丈量安排`;
-  const dayItems=items.filter(i=>i.scheduledDate===dateStr).sort((a,b)=>(a.scheduledTime||'').localeCompare(b.scheduledTime||''));
+  document.getElementById('dayPanelTitle').textContent=`${calMonth+1}月${d}日 行程`;
+  const dayItems=[
+    ...items.filter(i=>i.scheduledDate===dateStr).map(it=>({...it,_type:'measure',_time:it.scheduledTime||''})),
+    ...items.filter(i=>i.installDate===dateStr).map(it=>({...it,_type:'install',_time:''})),
+    ...items.filter(i=>i.paymentDate===dateStr).map(it=>({...it,_type:'payment',_time:''})),
+  ].sort((a,b)=>(a._time||'99:99').localeCompare(b._time||'99:99'));
   const list=document.getElementById('dayPanelList');
-  if(!dayItems.length){ list.innerHTML=`<div class="day-empty">這天沒有丈量安排</div>`; }
+  if(!dayItems.length){ list.innerHTML=`<div class="day-empty">這天沒有安排</div>`; }
   else{
-    list.innerHTML=dayItems.map(it=>`<div class="day-item">
-      <div class="day-item-stripe"></div>
+    list.innerHTML=dayItems.map(it=>{
+      const color=it._type==='measure'?'var(--blue)':it._type==='install'?'var(--violet)':'var(--orange)';
+      const typeLabel=it._type==='measure'?'🔵 丈量':it._type==='install'?'🟣 安裝':'🟠 收款';
+      const timeLabel=it._type==='measure'?(it.scheduledTime||'時間未定'):'全天';
+      return `<div class="day-item">
+      <div class="day-item-stripe" style="background:${color}"></div>
       <div class="day-item-body">
-        <div class="day-item-time">🕐 ${it.scheduledTime||'時間未定'}</div>
+        <div class="day-item-time">🕐 ${timeLabel} · ${typeLabel}</div>
         <div class="day-item-name">${it.name}</div>
         <div class="day-item-chips"><span class="chip ch-${it.status}">${it.status}</span>${it.gcalEventId?'<span class="chip" style="background:rgba(48,88,160,0.10);color:var(--blue)">📆 已同步日曆</span>':''}</div>
         <div class="day-item-meta"><div class="day-item-cell"><span class="day-item-lbl">負責人</span><span class="day-item-val">${it.owner||'—'}</span></div></div>
@@ -523,7 +719,8 @@ window.calDayClick=(d)=>{
         ${it.note?`<div class="day-item-note">${it.note.replace(/\n/g,'<br>')}</div>`:''}
         <button class="day-item-editbtn" onclick="closeDayPanel();openEdit('${it.id}')">✏️ 編輯</button>
       </div>
-    </div>`).join('');
+    </div>`;
+    }).join('');
   }
   document.getElementById('dayOverlay').classList.add('open');
 };
@@ -562,7 +759,16 @@ function loadFormDraft(it){
   document.getElementById('f_time').value=it?.scheduledTime||'';
   document.getElementById('f_note').value=it?.note||'';
   document.getElementById('f_operator').value=it?.operator||'';
+  document.getElementById('f_installDate').value=it?.installDate||'';
+  document.getElementById('f_installDone').checked=!!it?.installDone;
+  document.getElementById('f_paymentDate').value=it?.paymentDate||'';
+  document.getElementById('f_paymentDone').checked=!!it?.paymentDone;
+  draftPhotos={ sitePhotos:[...(it?.sitePhotos||[])], orderSlips:[...(it?.orderSlips||[])], paymentShots:[...(it?.paymentShots||[])] };
+  window.draftPhotos=draftPhotos;
+  renderPhotoGrid('sitePhotos'); renderPhotoGrid('orderSlips'); renderPhotoGrid('paymentShots');
   document.getElementById('toggle_gcal').className='toggle'+((it?.gcalEventId)?' on':'');
+  document.getElementById('toggle_gcal_install').className='toggle'+((it?.installGcalEventId)?' on':'');
+  document.getElementById('toggle_gcal_payment').className='toggle'+((it?.paymentGcalEventId)?' on':'');
   onStatusChange();
 }
 window.openModal=(id=null)=>{
@@ -573,7 +779,7 @@ window.openModal=(id=null)=>{
 };
 window.openEdit=id=>window.openModal(id);
 window.closeModal=()=>{ document.getElementById('modalOverlay').classList.remove('open'); editId=null; };
-window.toggleGcalSync=()=>{ const t=document.getElementById('toggle_gcal'); t.className='toggle'+(t.classList.contains('on')?'':' on'); };
+window.toggleGcalSync=(elId)=>{ const t=document.getElementById(elId); t.className='toggle'+(t.classList.contains('on')?'':' on'); };
 
 window.saveItem=async()=>{
   if(!FIREBASE_READY){ toast('⚠️ 尚未設定同步伺服器，請見說明文件'); return; }
@@ -587,6 +793,13 @@ window.saveItem=async()=>{
     scheduledTime: status==='待安排'?null:(document.getElementById('f_time').value||null),
     note:document.getElementById('f_note').value.trim(),
     lastOperator:document.getElementById('f_operator').value.trim()||'未知',
+    installDate: document.getElementById('f_installDate').value||null,
+    installDone: document.getElementById('f_installDone').checked,
+    paymentDate: document.getElementById('f_paymentDate').value||null,
+    paymentDone: document.getElementById('f_paymentDone').checked,
+    sitePhotos: draftPhotos.sitePhotos,
+    orderSlips: draftPhotos.orderSlips,
+    paymentShots: draftPhotos.paymentShots,
     updatedAt:Date.now(),
   };
   try{
@@ -595,13 +808,27 @@ window.saveItem=async()=>{
     else{ savedId=await dbPost({...data,createdAt:Date.now()}); }
 
     const wantsGcal=document.getElementById('toggle_gcal').classList.contains('on');
+    const wantsGcalInstall=document.getElementById('toggle_gcal_install').classList.contains('on');
+    const wantsGcalPayment=document.getElementById('toggle_gcal_payment').classList.contains('on');
+    const existing=items.find(i=>i.id===savedId);
+
     if(gcalSignedIn && wantsGcal && data.scheduledDate){
-      const existing=items.find(i=>i.id===savedId);
-      const eventId=await upsertGcalEvent(existing?.gcalEventId, data);
-      if(eventId) await dbPatch(savedId,{gcalEventId:eventId});
-    } else if(gcalSignedIn && !wantsGcal){
-      const existing=items.find(i=>i.id===savedId);
-      if(existing?.gcalEventId){ await deleteGcalEvent(existing.gcalEventId); await dbPatch(savedId,{gcalEventId:null}); }
+      const eid=await syncGcalEvent(existing?.gcalEventId,{summary:`丈量：${data.name}`,location:data.address,description:data.note,date:data.scheduledDate,time:data.scheduledTime});
+      if(eid) await dbPatch(savedId,{gcalEventId:eid});
+    } else if(gcalSignedIn && !wantsGcal && existing?.gcalEventId){
+      await deleteGcalEvent(existing.gcalEventId); await dbPatch(savedId,{gcalEventId:null});
+    }
+    if(gcalSignedIn && wantsGcalInstall && data.installDate){
+      const eid=await syncGcalEvent(existing?.installGcalEventId,{summary:`安裝：${data.name}`,location:data.address,description:data.note,date:data.installDate,time:null});
+      if(eid) await dbPatch(savedId,{installGcalEventId:eid});
+    } else if(gcalSignedIn && !wantsGcalInstall && existing?.installGcalEventId){
+      await deleteGcalEvent(existing.installGcalEventId); await dbPatch(savedId,{installGcalEventId:null});
+    }
+    if(gcalSignedIn && wantsGcalPayment && data.paymentDate){
+      const eid=await syncGcalEvent(existing?.paymentGcalEventId,{summary:`收尾款提醒：${data.name}`,location:'',description:data.note,date:data.paymentDate,time:null});
+      if(eid) await dbPatch(savedId,{paymentGcalEventId:eid});
+    } else if(gcalSignedIn && !wantsGcalPayment && existing?.paymentGcalEventId){
+      await deleteGcalEvent(existing.paymentGcalEventId); await dbPatch(savedId,{paymentGcalEventId:null});
     }
     toast('✅ 已儲存'); closeModal();
   }catch(e){ toast('❌ 儲存失敗'); console.error(e); }
@@ -623,22 +850,23 @@ window.connectGoogleCalendar=()=>{
       gcalToken=resp.access_token; gcalSignedIn=true;
       document.getElementById('gcalBtn').textContent='📆 已連接日曆';
       document.getElementById('gcalBtn').classList.add('on');
+      updateGcalRows();
       toast('✅ 已連接 Google 日曆');
     }
   });
   client.requestAccessToken();
 };
 
-async function upsertGcalEvent(existingEventId, data){
-  if(!gcalToken) return null;
-  const start=data.scheduledTime?`${data.scheduledDate}T${data.scheduledTime}:00`:`${data.scheduledDate}`;
-  const isAllDay=!data.scheduledTime;
-  const endDate=(()=>{ if(!isAllDay) return null; const d=new Date(data.scheduledDate); d.setDate(d.getDate()+1); return d.toISOString().split('T')[0]; })();
+async function syncGcalEvent(existingEventId, {summary,location,description,date,time}){
+  if(!gcalToken||!date) return existingEventId||null;
+  const start=time?`${date}T${time}:00`:`${date}`;
+  const isAllDay=!time;
+  const endDate=(()=>{ if(!isAllDay) return null; const d=new Date(date); d.setDate(d.getDate()+1); return d.toISOString().split('T')[0]; })();
   const body={
-    summary:`丈量：${data.name}`,
-    location:data.address||'',
-    description:data.note||'',
-    start:isAllDay?{date:data.scheduledDate}:{dateTime:start,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone},
+    summary,
+    location:location||'',
+    description:description||'',
+    start:isAllDay?{date}:{dateTime:start,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone},
     end:isAllDay?{date:endDate}:{dateTime:new Date(new Date(start).getTime()+60*60*1000).toISOString(),timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone},
   };
   const url=existingEventId
