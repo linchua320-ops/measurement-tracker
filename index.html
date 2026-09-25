@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-title" content="丈量排程">
 <meta name="theme-color" content="#f7f9f4">
 <link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <title>丈量排程</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;900&display=swap');
@@ -176,7 +178,7 @@ body{font-family:'Noto Sans TC',-apple-system,sans-serif;background:var(--bg);co
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .login-screen{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:32px 24px;}
 .login-box{width:100%;max-width:360px;display:flex;flex-direction:column;align-items:center;gap:28px;}
-.login-icon{font-size:56px;line-height:1;}
+.login-icon{width:88px;height:88px;border-radius:24px;box-shadow:0 8px 24px rgba(82,107,64,0.28);}
 .login-title{font-size:27px;font-weight:900;letter-spacing:-0.5px;text-align:center;}
 .login-sub{font-size:14px;color:var(--text3);text-align:center;line-height:1.6;margin-top:-16px;}
 .login-form{width:100%;display:flex;flex-direction:column;gap:12px;}
@@ -191,12 +193,19 @@ body{font-family:'Noto Sans TC',-apple-system,sans-serif;background:var(--bg);co
 
 <div class="login-screen" id="loginScreen">
   <div class="login-box">
-    <div class="login-icon">📐</div>
+    <img class="login-icon" src="icon-192.png" alt="丈量排程">
     <div class="login-title">丈量排程</div>
     <div class="login-sub">請輸入您的名稱<br>首次登入後將自動記住</div>
     <div class="login-form">
       <input class="login-input" id="loginInput" type="text" placeholder="輸入您的名稱" maxlength="20" autocomplete="off">
       <button class="login-btn" onclick="doLogin()">進入</button>
+    </div>
+    <div id="recoverToggle" style="font-size:12px;color:var(--text3);cursor:pointer;text-decoration:underline;" onclick="showRecoverBox()">資料不見了？點此嘗試找回</div>
+    <div id="recoverBox" style="display:none;width:100%;flex-direction:column;gap:10px;background:var(--sur2);border-radius:16px;padding:14px;">
+      <div style="font-size:12px;color:var(--text2);line-height:1.6;">如果你之前用過這個 App、但現在資料不見了，通常是因為之前登入時系統給你的是一串隨機代碼（不是你的名字）。請到 Firebase Console → Firestore Database → 資料，找到 <b>users</b> 集合底下的舊代碼（一串英文數字，通常開頭是 u_），貼在下面，並輸入你「現在」要用的名稱，就可以把舊資料搬過來。</div>
+      <input class="login-input" id="recoverOldCode" type="text" placeholder="舊代碼（例如 u_xxxxxxx）" style="font-size:13px;padding:10px 12px;">
+      <input class="login-input" id="recoverNewName" type="text" placeholder="你現在的名稱" style="font-size:13px;padding:10px 12px;">
+      <button class="login-btn" style="font-size:14px;padding:11px;" onclick="recoverData()">搬移資料</button>
     </div>
   </div>
 </div>
@@ -313,7 +322,7 @@ body{font-family:'Noto Sans TC',-apple-system,sans-serif;background:var(--bg);co
 //  跟案廠的 "projects" 子集合是分開的兩份資料，不會混在一起)
 // ══════════════════════════════════════════════════════════════
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp }
+import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDocs, setDoc }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -375,17 +384,42 @@ window.pickPurpose=(p)=>{
 };
 
 // ── login ──
+// 用「輸入的名稱」本身當作資料庫路徑（而不是每台裝置隨機產生的代碼），
+// 這樣同一個名稱不管在手機、電腦、換瀏覽器，永遠連到同一份資料。
 function doLogin(){
   const name=document.getElementById('loginInput').value.trim();
   if(!name){ document.getElementById('loginInput').focus(); return; }
-  let uid=localStorage.getItem('meastracker_uid');
-  if(!uid){ uid='u_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,6); }
+  const uid=name;
   localStorage.setItem('meastracker_uid', uid);
   localStorage.setItem('meastracker_uname', name);
   startApp(uid, name);
 }
 window.doLogin=doLogin;
 document.getElementById('loginInput').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+
+window.showRecoverBox=()=>{
+  document.getElementById('recoverToggle').style.display='none';
+  document.getElementById('recoverBox').style.display='flex';
+};
+window.recoverData=async()=>{
+  if(!FIREBASE_READY){ toast('⚠️ 尚未設定同步伺服器'); return; }
+  const oldCode=document.getElementById('recoverOldCode').value.trim();
+  const newName=document.getElementById('recoverNewName').value.trim();
+  if(!oldCode||!newName){ toast('請把舊代碼跟名稱都填好'); return; }
+  try{
+    const oldCol=collection(db,'users',oldCode,'measurements');
+    const snap=await getDocs(oldCol);
+    if(snap.empty){ toast('這個代碼下找不到任何資料，請確認代碼是否正確'); return; }
+    const newCol=collection(db,'users',newName,'measurements');
+    for(const d of snap.docs){
+      await setDoc(doc(newCol,d.id), d.data());
+    }
+    toast(`✅ 已搬移 ${snap.size} 筆資料，請直接用「${newName}」登入`);
+    document.getElementById('loginInput').value=newName;
+    document.getElementById('recoverBox').style.display='none';
+    document.getElementById('recoverToggle').style.display='block';
+  }catch(e){ toast('❌ 搬移失敗'); console.error(e); }
+};
 
 function startApp(uid, name){
   currentUserId=uid; currentUserName=name;
