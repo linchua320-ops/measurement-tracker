@@ -1,17 +1,12 @@
-const CACHE = 'meas-tracker-v2';
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./index.html', './manifest.json'])));
-  self.skipWaiting();
-});
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(names => Promise.all(
-      names.filter(n => n !== CACHE).map(n => caches.delete(n))
-    )).then(() => self.clients.claim())
-  );
-});
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
-  );
+// 這個 App 的離線快取機制先前造成裝置抓不到最新版本，
+// 現在讓它自我解除安裝、清空所有舊快取，之後不再攔截任何請求。
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', event => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
+    await self.registration.unregister();
+    const clientsList = await self.clients.matchAll({ type: 'window' });
+    clientsList.forEach(client => client.navigate(client.url));
+  })());
 });

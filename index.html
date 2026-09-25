@@ -795,7 +795,8 @@ window.saveItem=async()=>{
   }catch(e){ toast('❌ 儲存失敗'); console.error(e); }
 };
 
-if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+// 離線快取（Service Worker）先前造成裝置抓不到最新版本，已不再註冊新的。
+// 曾經安裝過舊版的裝置，瀏覽器會自動偵測到 sw.js 內容改變並套用新版本（自我解除安裝＋清快取）。
 </script>
 </body>
 </html>
