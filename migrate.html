@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>丈量資料搬家工具（一次性使用）</title>
+<style>
+body{font-family:-apple-system,'Noto Sans TC',sans-serif;background:#f7f9f4;color:#20261c;max-width:640px;margin:0 auto;padding:24px 18px 60px;}
+h1{font-size:20px;margin-bottom:6px;}
+p{font-size:14px;color:#5c6552;line-height:1.7;}
+button{width:100%;padding:14px;border-radius:14px;background:#71905d;color:#fff;border:none;font-size:16px;font-weight:700;cursor:pointer;margin:14px 0;}
+button:disabled{background:#aab5a0;cursor:default;}
+#log{background:#fff;border:1px solid #e3e9db;border-radius:14px;padding:14px 16px;font-size:13px;line-height:1.9;white-space:pre-wrap;word-break:break-all;min-height:120px;}
+.ok{color:#526b40;} .err{color:#b8564f;} .info{color:#5c6552;}
+input{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid #e3e9db;font-size:15px;margin:8px 0 4px;box-sizing:border-box;}
+label{font-size:12px;font-weight:700;color:#9aa38c;letter-spacing:0.5px;}
+</style>
+</head>
+<body>
+<h1>📦 丈量資料搬家工具</h1>
+<p>這個工具只做一件事：把舊的 <b>measurement-tracker-a3c98</b>（Realtime Database）裡所有帳號的丈量資料，複製一份到新的 <b>lin320-c88ba</b>（Firestore）指定帳號底下。舊資料不會被刪除，可以放心執行，執行完之後這個檔案就不需要了。</p>
+
+<label>要搬到哪個帳號名稱（跟 App 登入用的名字要一致）</label>
+<input id="targetName" type="text" value="蔡恩霖">
+
+<button id="scanBtn" onclick="scanOld()">① 先掃描舊資料（不會寫入，只是查看）</button>
+<button id="migrateBtn" onclick="runMigrate()" disabled>② 確認無誤，開始搬移</button>
+
+<div id="log">尚未開始。點「① 先掃描舊資料」看看有多少筆。</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getFirestore, collection, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// 舊資料來源：measurement-tracker-a3c98（Realtime Database）
+const oldConfig = {
+  apiKey: "AIzaSyDvrEpbZv_VD3a3K3plvG9yvTAxGUQKpWQ",
+  authDomain: "measurement-tracker-a3c98.firebaseapp.com",
+  databaseURL: "https://measurement-tracker-a3c98-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "measurement-tracker-a3c98",
+  storageBucket: "measurement-tracker-a3c98.firebasestorage.app",
+  messagingSenderId: "973661035829",
+  appId: "1:973661035829:web:a58cae370f0b897a6ec07c"
+};
+
+// 新資料目的地：lin320-c88ba（Firestore，跟案廠 App／丈量 App 現在用的同一個）
+const newConfig = {
+  apiKey:"AIzaSyCr3QybupoUWt1sng9V1_uUP4LthCgFsV0",
+  authDomain:"lin320-c88ba.firebaseapp.com",
+  databaseURL:"https://lin320-c88ba-default-rtdb.firebaseio.com",
+  projectId:"lin320-c88ba",
+  storageBucket:"lin320-c88ba.firebasestorage.app",
+  messagingSenderId:"345326399405",
+  appId:"1:345326399405:web:c7f8bd56ddff2f4ff5bb24"
+};
+
+const oldApp = initializeApp(oldConfig, "oldApp");
+const newApp = initializeApp(newConfig, "newApp");
+const oldDb = getDatabase(oldApp);
+const newDb = getFirestore(newApp);
+
+const logEl = document.getElementById('log');
+function log(msg, cls){ logEl.innerHTML += `\n<span class="${cls||''}">${msg}</span>`; logEl.scrollTop = logEl.scrollHeight; }
+function clearLog(){ logEl.innerHTML=''; }
+
+let collected=[]; // {uid, key, data}
+
+window.scanOld=async()=>{
+  clearLog();
+  log('讀取舊資料庫中…','info');
+  document.getElementById('scanBtn').disabled=true;
+  try{
+    const snap = await get(ref(oldDb, 'users'));
+    if(!snap.exists()){ log('找不到任何 users 資料。','err'); document.getElementById('scanBtn').disabled=false; return; }
+    collected=[];
+    const users = snap.val();
+    for(const uid in users){
+      const meas = users[uid]?.measurements;
+      if(!meas) continue;
+      for(const key in meas){
+        collected.push({uid, key, data: meas[key]});
+      }
+    }
+    if(!collected.length){ log('掃描完成，但沒有找到任何 measurements 資料。','err'); }
+    else{
+      log(`掃描完成，共找到 ${collected.length} 筆資料（來自 ${new Set(collected.map(c=>c.uid)).size} 個舊帳號代碼）：`,'ok');
+      collected.forEach(c=> log(`　• [${c.uid}] ${c.data?.name || c.data?.title || '(未命名)'} — ${JSON.stringify(c.data)}`,'info'));
+      document.getElementById('migrateBtn').disabled=false;
+    }
+  }catch(e){ log('讀取失敗：'+e.message,'err'); }
+  document.getElementById('scanBtn').disabled=false;
+};
+
+window.runMigrate=async()=>{
+  const targetName=document.getElementById('targetName').value.trim();
+  if(!targetName){ log('請先填要搬到哪個帳號名稱。','err'); return; }
+  if(!collected.length){ log('請先掃描一次。','err'); return; }
+  document.getElementById('migrateBtn').disabled=true;
+  log(`\n開始搬移 ${collected.length} 筆資料到帳號「${targetName}」…`,'info');
+  const col = collection(newDb, 'users', targetName, 'measurements');
+  let success=0, fail=0;
+  for(const c of collected){
+    const rec=c.data||{};
+    const newDoc={
+      name: rec.name || rec.title || '(未命名)',
+      purpose: rec.purpose || '丈量',
+      address: rec.address || '',
+      status: rec.status || '待安排',
+      scheduledDate: rec.scheduledDate || rec.date || null,
+      scheduledTime: rec.scheduledTime || rec.time || null,
+      note: rec.note || '',
+      owner: rec.owner || '',
+      lastOperator: rec.lastOperator || rec.operator || '搬家工具',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      migratedFrom: `measurement-tracker-a3c98/${c.uid}/${c.key}`,
+      migratedRaw: JSON.stringify(rec)
+    };
+    try{
+      await setDoc(doc(col, `${c.uid}_${c.key}`), newDoc);
+      success++;
+      log(`✅ 已搬移：${newDoc.name}`,'ok');
+    }catch(e){
+      fail++;
+      log(`❌ 失敗：${newDoc.name} — ${e.message}`,'err');
+    }
+  }
+  log(`\n完成！成功 ${success} 筆，失敗 ${fail} 筆。現在打開丈量 App、用「${targetName}」登入應該就看得到了。`, success>0?'ok':'err');
+};
+</script>
+</body>
+</html>
