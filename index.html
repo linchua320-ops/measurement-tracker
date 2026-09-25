@@ -490,8 +490,19 @@ function startApp(uid, name){
   if(unsubscribe) unsubscribe();
   col = collection(db, 'users', uid, 'measurements');
   document.getElementById('listView').innerHTML=`<div class="empty"><div class="eico">⏳</div><div class="etxt">連線中…</div></div>`;
-  unsubscribe = onSnapshot(col, s=>{ items=s.docs.map(d=>({id:d.id,...d.data()})); render(); },
-    ()=>{ document.getElementById('listView').innerHTML=`<div class="empty"><div class="eico">⚠️</div><div class="etxt">連線失敗</div></div>`; });
+  let gotFirstResult=false;
+  const connectTimer=setTimeout(()=>{
+    if(!gotFirstResult){
+      document.getElementById('listView').innerHTML=`<div class="empty"><div class="eico">⚠️</div><div class="etxt">連線超過 8 秒沒有回應<br>請檢查網路，或點下面按鈕重試</div><button class="savebtn" style="margin-top:14px;max-width:200px;" onclick="location.reload()">重新整理</button></div>`;
+    }
+  }, 8000);
+  unsubscribe = onSnapshot(col, s=>{
+    gotFirstResult=true; clearTimeout(connectTimer);
+    items=s.docs.map(d=>({id:d.id,...d.data()})); render();
+  }, ()=>{
+    clearTimeout(connectTimer);
+    document.getElementById('listView').innerHTML=`<div class="empty"><div class="eico">⚠️</div><div class="etxt">連線失敗</div><button class="savebtn" style="margin-top:14px;max-width:200px;" onclick="location.reload()">重新整理</button></div>`;
+  });
 }
 
 window.switchUser=()=>{
@@ -503,6 +514,18 @@ window.switchUser=()=>{
   document.getElementById('loginInput').value='';
   document.getElementById('loginScreen').style.display='flex';
 };
+
+// 任何未預期的程式錯誤都會顯示成看得到、可以按的提示，不會讓畫面靜靜卡成空白
+function showFatalError(msg){
+  if(document.getElementById('fatalErrorBanner')) return;
+  const b=document.createElement('div');
+  b.id='fatalErrorBanner';
+  b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#b8564f;color:#fff;padding:14px 18px;font-size:13px;line-height:1.6;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
+  b.innerHTML=`⚠️ App 發生問題（${msg}）<br><button style="margin-top:8px;padding:7px 18px;border-radius:10px;border:none;background:#fff;color:#b8564f;font-weight:700;font-family:inherit;" onclick="location.reload()">重新整理</button>`;
+  document.body.prepend(b);
+}
+window.addEventListener('error', e=>showFatalError(e.message||'未知錯誤'));
+window.addEventListener('unhandledrejection', e=>showFatalError(e.reason?.message||'連線問題'));
 
 const _savedUid=localStorage.getItem('meastracker_uid'), _savedName=localStorage.getItem('meastracker_uname');
 if(_savedUid && _savedName){ startApp(_savedUid,_savedName); }
