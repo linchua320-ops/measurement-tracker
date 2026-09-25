@@ -78,7 +78,7 @@ body{font-family:'Noto Sans TC',-apple-system,sans-serif;background:var(--bg);co
 .chip-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
 .chip-purpose{background:var(--pcs,var(--sur2));color:var(--pc,var(--text2));}
 .chip-status{background:var(--sur2);color:var(--text2);}
-.ch-待安排{background:var(--amber-soft);color:var(--amber);}
+.ch-待安排{background:#eceeea;color:#767d70;}
 .ch-已排定{background:var(--blue-soft);color:var(--blue);}
 .ch-已完成{background:var(--accent-soft);color:var(--accent-dark);}
 .cacts{display:flex;gap:6px;flex-shrink:0;padding-top:2px;}
@@ -92,6 +92,7 @@ body{font-family:'Noto Sans TC',-apple-system,sans-serif;background:var(--bg);co
 .ival{font-size:13px;font-weight:500;color:var(--text2);}
 .addr-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .addr-row .ival{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.drive-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--text2);background:var(--sur2);border-radius:var(--rchip);padding:3px 9px;flex-shrink:0;white-space:nowrap;}
 .noteblock{background:var(--sur3);border-radius:11px;padding:9px 12px;font-size:12px;font-weight:400;color:var(--text2);line-height:1.65;}
 .cfoot{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-top:1px solid var(--border);}
 .fuser,.ftime{font-size:11px;color:var(--text3);}
@@ -277,6 +278,7 @@ body{font-family:'Noto Sans TC',-apple-system,sans-serif;background:var(--bg);co
           <input class="finput" id="f_address" type="text" placeholder="輸入地址" style="flex:1;">
           <button type="button" class="actbtn" style="width:48px;height:48px;border-radius:14px;flex-shrink:0;" title="開啟導航" onclick="openNav(document.getElementById('f_address').value)">🧭</button>
         </div>
+        <div id="driveTimeHint" style="font-size:12px;color:var(--text3);min-height:16px;"></div>
       </div>
       <div class="fgrow2">
         <div class="fgrp">
@@ -337,6 +339,10 @@ const firebaseConfig = {
 
 const NAV_APP_SCHEME = ''; // 若查到「導航王TM」URL Scheme 可填入，留空則使用 Google 地圖導航
 
+// 預估車程用（選填）。需要一組 Google Maps API 金鑰（啟用 Distance Matrix API）。留空則不顯示車程。
+const GOOGLE_MAPS_API_KEY = '';
+const ORIGIN_ADDRESS = '基隆市安樂區興寮里基金一路98號';
+
 const PURPOSES = ['丈量','拜訪','送貨','其他'];
 const PURPOSE_ICON = {'丈量':'📐','拜訪':'🤝','送貨':'🚚','其他':'📌'};
 
@@ -358,6 +364,56 @@ window.openNav=(address)=>{
   if(NAV_APP_SCHEME){ window.location.href=NAV_APP_SCHEME+enc; }
   else{ window.open('https://www.google.com/maps/dir/?api=1&destination='+enc,'_blank'); }
 };
+
+// ── 預估車程 (Google Distance Matrix) ──
+let mapsLoaded=false, mapsLoading=null;
+function loadMapsApi(){
+  if(mapsLoaded) return Promise.resolve();
+  if(mapsLoading) return mapsLoading;
+  mapsLoading = new Promise((resolve,reject)=>{
+    if(!GOOGLE_MAPS_API_KEY){ reject(new Error('no key')); return; }
+    const s=document.createElement('script');
+    s.src=`https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}`;
+    s.onload=()=>{ mapsLoaded=true; resolve(); };
+    s.onerror=()=>reject(new Error('load fail'));
+    document.head.appendChild(s);
+  });
+  return mapsLoading;
+}
+async function estimateDrive(address){
+  if(!address || !GOOGLE_MAPS_API_KEY) return null;
+  try{ await loadMapsApi(); }catch{ return {error:'load'}; }
+  return new Promise(resolve=>{
+    const service=new google.maps.DistanceMatrixService();
+    service.getDistanceMatrix({
+      origins:[ORIGIN_ADDRESS],
+      destinations:[address],
+      travelMode: google.maps.TravelMode.DRIVING,
+    }, (res,status)=>{
+      if(status!=='OK'){ resolve({error:'api'}); return; }
+      const el=res.rows?.[0]?.elements?.[0];
+      if(!el || el.status!=='OK'){ resolve({error:'route'}); return; }
+      resolve({duration:el.duration.text, distance:el.distance.text});
+    });
+  });
+}
+let driveDebounce=null;
+async function updateDriveHint(address){
+  const hint=document.getElementById('driveTimeHint');
+  if(!GOOGLE_MAPS_API_KEY){ hint.textContent=''; return; }
+  if(!address){ hint.textContent=''; return; }
+  hint.textContent='🚗 計算車程中…';
+  const r=await estimateDrive(address);
+  if(!r){ hint.textContent=''; return; }
+  if(r.error){ hint.textContent='⚠️ 無法計算車程'; return; }
+  hint.textContent=`🚗 距出發點約 ${r.duration}（${r.distance}）`;
+}
+document.getElementById('f_address').addEventListener('input', ()=>{
+  clearTimeout(driveDebounce);
+  const val=document.getElementById('f_address').value.trim();
+  if(!val){ document.getElementById('driveTimeHint').textContent=''; return; }
+  driveDebounce=setTimeout(()=>updateDriveHint(val), 900);
+});
 
 function extractDistrict(address){
   if(!address) return '';
@@ -494,7 +550,7 @@ function cardHTML(it){
         <div class="icell"><span class="ilbl">負責人</span><span class="ival">${it.owner||'—'}</span></div>
         <div class="icell"><span class="ilbl">時間</span><span class="ival">${it.scheduledDate?fmt(it.scheduledDate)+(it.scheduledTime?' '+it.scheduledTime:''):'尚未安排'}</span></div>
       </div>
-      ${it.address?`<div class="addr-row"><span class="ival">📍 ${it.address}</span><button class="actbtn" style="width:30px;height:30px;font-size:13px;flex-shrink:0;" title="導航" onclick="openNav('${it.address.replace(/'/g,"\\'")}')">🧭</button></div>`:''}
+      ${it.address?`<div class="addr-row"><span class="ival">📍 ${it.address}</span>${it.driveDuration?`<span class="drive-chip">🚗 ${it.driveDuration}</span>`:''}<button class="actbtn" style="width:30px;height:30px;font-size:13px;flex-shrink:0;" title="導航" onclick="openNav('${it.address.replace(/'/g,"\\'")}')">🧭</button></div>`:''}
       ${it.note?`<div class="noteblock">${it.note.replace(/\n/g,'<br>')}</div>`:''}
     </div>
     <div class="cfoot"><span class="fuser">👤 ${it.lastOperator||'—'}</span><span class="ftime">${ago(it.updatedAt)}</span></div>
@@ -665,6 +721,8 @@ let draftData=null;
 function loadFormDraft(it){
   document.getElementById('f_name').value=it?.name||'';
   document.getElementById('f_address').value=it?.address||'';
+  document.getElementById('driveTimeHint').textContent='';
+  if(it?.address) updateDriveHint(it.address);
   document.getElementById('f_status').value=it?.status||'待安排';
   document.getElementById('f_owner').value=it?.owner||'';
   document.getElementById('f_date').value=it?.scheduledDate||'';
@@ -723,6 +781,10 @@ window.saveItem=async()=>{
     lastOperator:document.getElementById('f_operator').value.trim()||'未知',
     updatedAt:serverTimestamp(),
   };
+  if(data.address && GOOGLE_MAPS_API_KEY){
+    const r=await estimateDrive(data.address);
+    if(r && !r.error){ data.driveDuration=r.duration; data.driveDistance=r.distance; }
+  }
   try{
     if(editId){ await updateDoc(doc(db,"users",currentUserId,"measurements",editId),data); }
     else{ await addDoc(col,{...data,createdAt:serverTimestamp()}); }
