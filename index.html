@@ -426,6 +426,7 @@ function extractDistrict(address){
 }
 
 let items=[], editId=null, currentView='list', filterStatus='all';
+let draftData=null;
 let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
 let currentUserId=null, currentUserName=null;
 let selectedPurpose='丈量';
@@ -740,7 +741,6 @@ window.deleteItem=async(id)=>{
 };
 
 // ── modal + draft auto-save ──
-let draftData=null;
 function loadFormDraft(it){
   document.getElementById('f_name').value=it?.name||'';
   document.getElementById('f_address').value=it?.address||'';
