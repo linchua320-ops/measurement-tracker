@@ -66,6 +66,9 @@ body{font-family:'Noto Sans TC',-apple-system,sans-serif;background:var(--bg);co
 .section-head-title{font-size:12.5px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;}
 .section-divider{flex:1;height:1px;background:var(--border);}
 .clear-filter{font-size:11px;font-weight:600;color:var(--accent-dark);background:var(--accent-soft);border:none;border-radius:var(--rchip);padding:4px 11px;cursor:pointer;}
+.pending-pill{position:relative;display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1.5px dashed var(--border);border-radius:var(--rchip);padding:9px 20px 9px 16px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;}
+.pending-pill:active{background:var(--sur2);}
+.pending-badge{position:absolute;top:-8px;right:-8px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--red);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(184,86,79,0.4);}
 .card{background:var(--surface);border-radius:var(--rcard);overflow:hidden;box-shadow:var(--shm);position:relative;border:1px solid var(--border);}
 .card.done-card{opacity:0.62;}
 .cstripe{height:4px;background:var(--pc,var(--border));}
@@ -602,9 +605,17 @@ function renderList(){
   const sched=[...items.filter(i=>i.status==='已排定')].sort((a,b)=>((a.scheduledDate||'')+((a.scheduledTime||''))).localeCompare((b.scheduledDate||'')+(b.scheduledTime||'')));
   const done=items.filter(i=>i.status==='已完成');
   let html='';
-  if(pending.length){ html+=`<div class="section-head"><div class="section-head-title">📋 待安排（${pending.length}）</div><div class="section-divider"></div></div>`+pending.map(cardHTML).join(''); }
-  if(sched.length){ html+=`<div class="section-head"><div class="section-head-title">📆 已排定（${sched.length}）</div><div class="section-divider"></div></div>`+sched.map(cardHTML).join(''); }
+  if(pending.length){
+    html+=`<div style="padding:2px 0 6px;">
+      <button class="pending-pill" onclick="setFilter('待安排')">
+        📋 待安排事項
+        <span class="pending-badge">${pending.length}</span>
+      </button>
+    </div>`;
+  }
+  if(sched.length){ html+=`<div class="section-head"><div class="section-head-title">📆 已排定・依日期排序（${sched.length}）</div><div class="section-divider"></div></div>`+sched.map(cardHTML).join(''); }
   if(done.length){ html+=`<div class="section-head"><div class="section-head-title">✅ 已完成（${done.length}）</div><div class="section-divider"></div></div>`+done.map(cardHTML).join(''); }
+  if(!sched.length && !done.length && pending.length){ html+=`<div class="empty"><div class="eico">📆</div><div class="etxt">目前沒有已排定的行程<br>點上面「待安排事項」安排時間吧</div></div>`; }
   el.innerHTML=html;
 }
 
