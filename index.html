@@ -32,6 +32,8 @@
   --amber-soft:rgba(169,130,42,0.13);
   --blue:#4f77a8;
   --blue-soft:rgba(79,119,168,0.12);
+  --purple:#8a6bb0;
+  --purple-soft:rgba(138,107,176,0.13);
   --rcard:20px; --rbtn:14px; --rchip:100px;
   --shs:0 1px 2px rgba(35,45,25,0.05),0 1px 3px rgba(35,45,25,0.04);
   --shm:0 2px 10px rgba(35,45,25,0.06),0 10px 26px rgba(35,45,25,0.05);
@@ -84,6 +86,10 @@ body{font-family:'Noto Sans TC',-apple-system,sans-serif;background:var(--bg);co
 .ch-待安排{background:#eceeea;color:#767d70;}
 .ch-已排定{background:var(--blue-soft);color:var(--blue);}
 .ch-已完成{background:var(--accent-soft);color:var(--accent-dark);}
+.ch-已下單{background:var(--purple-soft);color:var(--purple);}
+.bool-toggle{width:100%;padding:11px;border-radius:14px;border:1.5px solid var(--border);background:var(--surface);font-size:14px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;transition:border-color 0.15s,background 0.15s;}
+.bool-toggle.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-dark);}
+.order-block{background:var(--purple-soft);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;}
 .cacts{display:flex;gap:6px;flex-shrink:0;padding-top:2px;}
 .actbtn{width:33px;height:33px;border-radius:11px;background:var(--sur2);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:background 0.15s,transform 0.1s;}
 .actbtn:active{background:var(--border);transform:scale(0.92);}
@@ -290,6 +296,7 @@ body{font-family:'Noto Sans TC',-apple-system,sans-serif;background:var(--bg);co
             <option value="待安排">待安排</option>
             <option value="已排定">已排定</option>
             <option value="已完成">已完成</option>
+            <option value="已下單">已下單</option>
           </select>
         </div>
         <div class="fgrp">
@@ -305,6 +312,38 @@ body{font-family:'Noto Sans TC',-apple-system,sans-serif;background:var(--bg);co
         <div class="fgrp">
           <label class="flbl">時間</label>
           <input class="finput" id="f_time" type="time">
+        </div>
+      </div>
+      <div class="order-block" id="orderBlock" style="display:none">
+        <div class="fgrow2">
+          <div class="fgrp">
+            <label class="flbl">安裝日期</label>
+            <input class="finput" id="f_installDate" type="date">
+          </div>
+          <div class="fgrp">
+            <label class="flbl">尾款到期日</label>
+            <input class="finput" id="f_balanceDate" type="date">
+          </div>
+        </div>
+        <div class="fgrow2">
+          <div class="fgrp">
+            <label class="flbl">訂金金額</label>
+            <input class="finput" id="f_depositAmount" type="number" placeholder="0">
+          </div>
+          <div class="fgrp">
+            <label class="flbl">尾款金額</label>
+            <input class="finput" id="f_balanceAmount" type="number" placeholder="0">
+          </div>
+        </div>
+        <div class="fgrow2">
+          <div class="fgrp">
+            <label class="flbl">訂金</label>
+            <button type="button" class="bool-toggle" id="f_hasDeposit" onclick="toggleBool('f_hasDeposit')">⬜ 未付</button>
+          </div>
+          <div class="fgrp">
+            <label class="flbl">尾款</label>
+            <button type="button" class="bool-toggle" id="f_balanceDone" onclick="toggleBool('f_balanceDone')">⬜ 未付</button>
+          </div>
         </div>
       </div>
       <div class="fgrp">
@@ -549,7 +588,13 @@ function ago(ts){
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2400); }
 window.onStatusChange=()=>{
   const s=document.getElementById('f_status').value;
-  document.getElementById('scheduleRow').style.display=(s==='待安排')?'none':'grid';
+  document.getElementById('scheduleRow').style.display=(s==='已排定'||s==='已完成')?'grid':'none';
+  document.getElementById('orderBlock').style.display=(s==='已下單')?'flex':'none';
+};
+window.toggleBool=(id)=>{
+  const b=document.getElementById(id);
+  const on=b.classList.toggle('on');
+  b.textContent = on ? '✅ 已付' : '⬜ 未付';
 };
 
 // ── card HTML ──
@@ -567,7 +612,7 @@ function cardHTML(it){
         </div>
       </div>
       <div class="cacts">
-        ${!isDone?`<button class="actbtn done-btn" title="標記完成" onclick="markDone('${it.id}')">✓</button>`:''}
+        ${(!isDone&&it.status!=='已下單')?`<button class="actbtn done-btn" title="標記完成" onclick="markDone('${it.id}')">✓</button>`:''}
         <button class="actbtn" onclick="openEdit('${it.id}')">✏️</button>
         <button class="actbtn" onclick="deleteItem('${it.id}')" style="color:var(--red)">🗑</button>
       </div>
@@ -578,6 +623,16 @@ function cardHTML(it){
         <div class="icell"><span class="ilbl">時間</span><span class="ival">${it.scheduledDate?fmt(it.scheduledDate)+(it.scheduledTime?' '+it.scheduledTime:''):'尚未安排'}</span></div>
       </div>
       ${it.address?`<div class="addr-row"><span class="ival">📍 ${it.address}</span>${it.driveDuration?`<span class="drive-chip">🚗 ${it.driveDuration}</span>`:''}<button class="actbtn" style="width:30px;height:30px;font-size:13px;flex-shrink:0;" title="導航" onclick="openNav('${it.address.replace(/'/g,"\\'")}')">🧭</button></div>`:''}
+      ${it.status==='已下單'?`<div class="order-block">
+        <div class="irow">
+          <div class="icell"><span class="ilbl">安裝日期</span><span class="ival">${fmt(it.installDate)}</span></div>
+          <div class="icell"><span class="ilbl">尾款到期</span><span class="ival">${fmt(it.balanceDate)}</span></div>
+        </div>
+        <div class="irow">
+          <div class="icell"><span class="ilbl">訂金</span><span class="ival">${it.depositAmount?('NT$'+Number(it.depositAmount).toLocaleString()):'—'}　${it.hasDeposit?'✅已付':'⬜未付'}</span></div>
+          <div class="icell"><span class="ilbl">尾款</span><span class="ival">${it.balanceAmount?('NT$'+Number(it.balanceAmount).toLocaleString()):'—'}　${it.balanceDone?'✅已付':'⬜未付'}</span></div>
+        </div>
+      </div>`:''}
       ${it.note?`<div class="noteblock">${it.note.replace(/\n/g,'<br>')}</div>`:''}
     </div>
     <div class="cfoot"><span class="fuser">👤 ${it.lastOperator||'—'}</span><span class="ftime">${ago(it.updatedAt)}</span></div>
@@ -602,20 +657,34 @@ function renderList(){
   }
 
   const pending=items.filter(i=>i.status==='待安排');
-  const sched=[...items.filter(i=>i.status==='已排定')].sort((a,b)=>((a.scheduledDate||'')+((a.scheduledTime||''))).localeCompare((b.scheduledDate||'')+(b.scheduledTime||'')));
+  const ordered=items.filter(i=>i.status==='已下單');
+  const schedAll=items.filter(i=>i.status==='已排定');
+  const td=today();
+  const schedUpcoming=schedAll.filter(i=>!i.scheduledDate||i.scheduledDate>=td)
+    .sort((a,b)=>((a.scheduledDate||'')+(a.scheduledTime||'')).localeCompare((b.scheduledDate||'')+(b.scheduledTime||'')));
+  const schedOverdue=schedAll.filter(i=>i.scheduledDate&&i.scheduledDate<td)
+    .sort((a,b)=>((b.scheduledDate||'')+(b.scheduledTime||'')).localeCompare((a.scheduledDate||'')+(a.scheduledTime||'')));
   const done=items.filter(i=>i.status==='已完成');
-  let html='';
+
+  let html='<div style="display:flex;flex-wrap:wrap;gap:10px;padding:2px 0 6px;">';
   if(pending.length){
-    html+=`<div style="padding:2px 0 6px;">
-      <button class="pending-pill" onclick="setFilter('待安排')">
+    html+=`<button class="pending-pill" onclick="setFilter('待安排')">
         📋 待安排事項
         <span class="pending-badge">${pending.length}</span>
-      </button>
-    </div>`;
+      </button>`;
   }
-  if(sched.length){ html+=`<div class="section-head"><div class="section-head-title">📆 已排定・依日期排序（${sched.length}）</div><div class="section-divider"></div></div>`+sched.map(cardHTML).join(''); }
+  if(ordered.length){
+    html+=`<button class="pending-pill" onclick="setFilter('已下單')">
+        📦 已下單
+        <span class="pending-badge" style="background:var(--purple);box-shadow:0 2px 5px rgba(138,107,176,0.4);">${ordered.length}</span>
+      </button>`;
+  }
+  html+='</div>';
+
+  if(schedUpcoming.length){ html+=`<div class="section-head"><div class="section-head-title">📆 已排定・依日期排序（${schedUpcoming.length}）</div><div class="section-divider"></div></div>`+schedUpcoming.map(cardHTML).join(''); }
+  if(schedOverdue.length){ html+=`<div class="section-head"><div class="section-head-title">⚠️ 已逾期未完成（${schedOverdue.length}）</div><div class="section-divider"></div></div>`+schedOverdue.map(cardHTML).join(''); }
   if(done.length){ html+=`<div class="section-head"><div class="section-head-title">✅ 已完成（${done.length}）</div><div class="section-divider"></div></div>`+done.map(cardHTML).join(''); }
-  if(!sched.length && !done.length && pending.length){ html+=`<div class="empty"><div class="eico">📆</div><div class="etxt">目前沒有已排定的行程<br>點上面「待安排事項」安排時間吧</div></div>`; }
+  if(!schedUpcoming.length && !schedOverdue.length && !done.length && (pending.length||ordered.length)){ html+=`<div class="empty"><div class="eico">📆</div><div class="etxt">目前沒有已排定的行程</div></div>`; }
   el.innerHTML=html;
 }
 
@@ -624,11 +693,13 @@ function updateStats(){
   const pend=items.filter(i=>i.status==='待安排').length;
   const sch=items.filter(i=>i.status==='已排定').length;
   const dn=items.filter(i=>i.status==='已完成').length;
+  const ord=items.filter(i=>i.status==='已下單').length;
   document.getElementById('statsBar').innerHTML=
     `<div class="spill ${filterStatus==='all'?'on':''}" onclick="setFilter('all')"><span class="n">${tot}</span><span class="l">全部</span></div>
      <div class="spill ${filterStatus==='待安排'?'on':''}" onclick="setFilter('待安排')"><span class="n" style="color:var(--amber)">${pend}</span><span class="l">待安排</span></div>
      <div class="spill ${filterStatus==='已排定'?'on':''}" onclick="setFilter('已排定')"><span class="n" style="color:var(--blue)">${sch}</span><span class="l">已排定</span></div>
-     <div class="spill ${filterStatus==='已完成'?'on':''}" onclick="setFilter('已完成')"><span class="n" style="color:var(--accent-dark)">${dn}</span><span class="l">已完成</span></div>`;
+     <div class="spill ${filterStatus==='已完成'?'on':''}" onclick="setFilter('已完成')"><span class="n" style="color:var(--accent-dark)">${dn}</span><span class="l">已完成</span></div>
+     <div class="spill ${filterStatus==='已下單'?'on':''}" onclick="setFilter('已下單')"><span class="n" style="color:var(--purple)">${ord}</span><span class="l">已下單</span></div>`;
 }
 window.setFilter=(s)=>{
   filterStatus = (s==='all') ? 'all' : (filterStatus===s ? 'all' : s);
@@ -763,6 +834,12 @@ function loadFormDraft(it){
   document.getElementById('f_time').value=it?.scheduledTime||'';
   document.getElementById('f_note').value=it?.note||'';
   document.getElementById('f_operator').value=it?.operator||'';
+  document.getElementById('f_installDate').value=it?.installDate||'';
+  document.getElementById('f_balanceDate').value=it?.balanceDate||'';
+  document.getElementById('f_depositAmount').value=it?.depositAmount||'';
+  document.getElementById('f_balanceAmount').value=it?.balanceAmount||'';
+  const depBtn=document.getElementById('f_hasDeposit'); depBtn.className='bool-toggle'+(it?.hasDeposit?' on':''); depBtn.textContent=it?.hasDeposit?'✅ 已付':'⬜ 未付';
+  const balBtn=document.getElementById('f_balanceDone'); balBtn.className='bool-toggle'+(it?.balanceDone?' on':''); balBtn.textContent=it?.balanceDone?'✅ 已付':'⬜ 未付';
   window.pickPurpose(it?.purpose||'丈量');
   onStatusChange();
 }
@@ -809,8 +886,14 @@ window.saveItem=async()=>{
     purpose:selectedPurpose,
     address:document.getElementById('f_address').value.trim(),
     owner:document.getElementById('f_owner').value.trim(),
-    scheduledDate: status==='待安排'?null:(document.getElementById('f_date').value||null),
-    scheduledTime: status==='待安排'?null:(document.getElementById('f_time').value||null),
+    scheduledDate: (status==='已排定'||status==='已完成')?(document.getElementById('f_date').value||null):null,
+    scheduledTime: (status==='已排定'||status==='已完成')?(document.getElementById('f_time').value||null):null,
+    installDate: document.getElementById('f_installDate').value||null,
+    balanceDate: document.getElementById('f_balanceDate').value||null,
+    depositAmount: document.getElementById('f_depositAmount').value?Number(document.getElementById('f_depositAmount').value):null,
+    balanceAmount: document.getElementById('f_balanceAmount').value?Number(document.getElementById('f_balanceAmount').value):null,
+    hasDeposit: document.getElementById('f_hasDeposit').classList.contains('on'),
+    balanceDone: document.getElementById('f_balanceDone').classList.contains('on'),
     note:document.getElementById('f_note').value.trim(),
     lastOperator:document.getElementById('f_operator').value.trim()||'未知',
     updatedAt:serverTimestamp(),
