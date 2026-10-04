@@ -368,6 +368,8 @@ body{font-family:'Noto Sans TC',-apple-system,sans-serif;background:var(--bg);co
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDocs, setDoc }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInAnonymously, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey:"AIzaSyCr3QybupoUWt1sng9V1_uUP4LthCgFsV0",
@@ -392,9 +394,18 @@ const PURPOSE_ICON = {'丈量':'📐','拜訪':'🤝','送貨':'🚚','其他':'
 
 const FIREBASE_READY = !firebaseConfig.apiKey.startsWith('YOUR_');
 let db=null, col=null, unsubscribe=null;
+// 背景匿名登入：使用者完全不會看到、也不用做任何事，純粹是為了讓 Firebase 的安全規則
+// 能限制成「只有登入過的人才能讀寫」，擋掉外部掃描/未授權的存取，同時不影響現有「輸入名稱」的使用方式。
+let authReadyResolve;
+const authReadyPromise = new Promise(res=>{ authReadyResolve=res; });
 if(FIREBASE_READY){
   const app = initializeApp(firebaseConfig);
   db = getFirestore(app);
+  const auth = getAuth(app);
+  onAuthStateChanged(auth, user=>{
+    if(user) authReadyResolve(user);
+  });
+  signInAnonymously(auth).catch(e=>{ console.error('匿名登入失敗', e); });
 } else {
   document.getElementById('setupBanner').innerHTML =
     `<div class="setup-banner">⚠️ 尚未設定 Firebase 連線資訊，目前無法跨裝置同步。</div>`;
@@ -506,6 +517,7 @@ window.recoverData=async()=>{
   const newName=document.getElementById('recoverNewName').value.trim();
   if(!oldCode||!newName){ toast('請把舊代碼跟名稱都填好'); return; }
   try{
+    await authReadyPromise;
     const oldCol=collection(db,'users',oldCode,'measurements');
     const snap=await getDocs(oldCol);
     if(snap.empty){ toast('這個代碼下找不到任何資料，請確認代碼是否正確'); return; }
@@ -520,7 +532,7 @@ window.recoverData=async()=>{
   }catch(e){ toast('❌ 搬移失敗'); console.error(e); }
 };
 
-function startApp(uid, name){
+async function startApp(uid, name){
   currentUserId=uid; currentUserName=name;
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('userBadge').style.display='flex';
@@ -530,9 +542,10 @@ function startApp(uid, name){
   draftData = savedDraft ? JSON.parse(savedDraft) : null;
 
   if(!FIREBASE_READY){ items=[]; render(); return; }
+  document.getElementById('listView').innerHTML=`<div class="empty"><div class="eico">⏳</div><div class="etxt">連線中…</div></div>`;
+  await authReadyPromise; // 等背景匿名登入完成，才能通過安全規則讀寫資料
   if(unsubscribe) unsubscribe();
   col = collection(db, 'users', uid, 'measurements');
-  document.getElementById('listView').innerHTML=`<div class="empty"><div class="eico">⏳</div><div class="etxt">連線中…</div></div>`;
   let gotFirstResult=false;
   const connectTimer=setTimeout(()=>{
     if(!gotFirstResult){
